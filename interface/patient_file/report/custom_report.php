@@ -370,31 +370,44 @@ if ($PDF_OUTPUT) { ?>
 
                         //print the recurring days to screen
                         if (empty($recurrences)) { //if there are no recurrent appointments:
-                            echo "<div class='text' >";
-                            echo "<span>" . xlt('None{{Appointment}}') . "</span>";
-                            echo "</div>";
-                            echo "<br />";
+                            if (!$csv) {
+                                echo "<div class='text' >";
+                                echo "<span>" . xlt('None{{Appointment}}') . "</span>";
+                                echo "</div>";
+                                echo "<br />";
+                            }
                         } else {
+                            if ($csv) {
+                                // CSV headers:
+                                echo csvEscape(xlt('Appointment Category')) . ",";
+                                echo csvEscape(xlt('Recurrence')) . ",";
+                                echo csvEscape(xlt('End Date')) . "\n";
+                            }
                             foreach ($recurrences as $row) {
                                 //checks if there are recurrences and if they are current (git didn't end yet)
                                 if (!recurrence_is_current($row['pc_endDate'])) {
                                     continue;
                                 }
 
-                                echo "<div class='text' >";
-                                echo "<span>" . xlt('Appointment Category') . ': ' . xlt($row['pc_catname']) . "</span>";
-                                echo "<br />";
-                                echo "<span>" . xlt('Recurrence') . ': ' . text($row['pc_recurrspec']) . "</span>";
-                                echo "<br />";
+                                if (!$csv) {
+                                    echo "<div class='text' >";
+                                    echo "<span>" . xlt('Appointment Category') . ': ' . xlt($row['pc_catname']) . "</span>";
+                                    echo "<br />";
+                                    echo "<span>" . xlt('Recurrence') . ': ' . text($row['pc_recurrspec']) . "</span>";
+                                    echo "<br />";
 
-                                if (ends_in_a_week($row['pc_endDate'])) {
-                                    echo "<span class='text-danger'>" . xlt('End Date') . ': ' . text($row['pc_endDate']) . "</span>";
+                                    if (ends_in_a_week($row['pc_endDate'])) {
+                                        echo "<span class='text-danger'>" . xlt('End Date') . ': ' . text($row['pc_endDate']) . "</span>";
+                                    } else {
+                                        echo "<span>" . xlt('End Date') . ': ' . text($row['pc_endDate']) . "</span>";
+                                    }
+
+                                    echo "</div>";
+                                    echo "<br />";
                                 } else {
-                                    echo "<span>" . xlt('End Date') . ': ' . text($row['pc_endDate']) . "</span>";
+                                    echo csvEscape(xlt($row['pc_catname'])) . ",". csvEscape($row['pc_recurrspec']) . ","
+                                        . csvEscape($row['pc_endDate']) . "\n";
                                 }
-
-                                echo "</div>";
-                                echo "<br />";
                             }
                         }
                         if (!$csv) {
