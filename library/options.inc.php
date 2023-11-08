@@ -3310,34 +3310,38 @@ $last_group = '';
 $cell_count = 0;
 $item_count = 0;
 
-function disp_end_cell()
+function disp_end_cell($as_csv = FALSE)
 {
     global $item_count, $cell_count;
     if ($item_count > 0) {
-        echo "</td>";
+        if (!$as_csv) {
+            echo "</td>";
+        }
         $item_count = 0;
     }
 }
 
-function disp_end_row()
+function disp_end_row($as_csv = FALSE)
 {
     global $cell_count, $CPR;
-    disp_end_cell();
+    disp_end_cell(as_csv: $as_csv);
     if ($cell_count > 0) {
-        for (; $cell_count < $CPR; ++$cell_count) {
-            echo "<td></td>";
-        }
+        if (!$as_csv) {
+            for (; $cell_count < $CPR; ++$cell_count) {
+                echo "<td></td>";
+            }
 
-        echo "</tr>\n";
+            echo "</tr>\n";
+        }
         $cell_count = 0;
     }
 }
 
-function disp_end_group()
+function disp_end_group($as_csv = FALSE)
 {
     global $last_group;
     if (strlen($last_group) > 0) {
-        disp_end_row();
+        disp_end_row(as_csv: $as_csv);
     }
 }
 
@@ -3575,9 +3579,10 @@ function getLayoutProperties($formtype, &$grparr, $sel = "grp_title", $limit = n
     }
 }
 
-function display_layout_rows($formtype, $result1, $result2 = '')
+function display_layout_rows($formtype, $result1, $result2 = '', $as_csv = FALSE)
 {
     global $item_count, $cell_count, $last_group, $CPR;
+    $csv_columns = []; $csv_fields = []; $csv_last_column = '';
 
     if ('HIS' == $formtype) {
         $formtype .= '%'; // TBD: DEM also?
@@ -3653,7 +3658,7 @@ function display_layout_rows($formtype, $result1, $result2 = '')
                     continue;
                 }
 
-                disp_end_group();
+                disp_end_group(as_csv: $as_csv);
                 $last_group = $this_group;
             }
 
@@ -3661,20 +3666,22 @@ function display_layout_rows($formtype, $result1, $result2 = '')
             if (!empty($currvalue) && !($currvalue == '0000-00-00 00:00:00')) {
                 // Handle starting of a new row.
                 if (($titlecols > 0 && $cell_count >= $CPR) || $cell_count == 0 || $prepend_blank_row || $jump_new_row) {
-                    disp_end_row();
-                    if ($prepend_blank_row) {
-                        echo "<tr><td class='label' colspan='" . ($CPR + 1) . "'>&nbsp;</td></tr>\n";
-                    }
-                    echo "<tr>";
-                    if ($group_name) {
-                        echo "<td class='groupname'>";
-                        echo text(xl_layout_label($group_name));
-                        $group_name = '';
-                    } else {
-                        echo "<td class='align-top'>&nbsp;";
-                    }
+                    disp_end_row(as_csv: $as_csv);
+                    if (!$as_csv) {
+                        if ($prepend_blank_row) {
+                            echo "<tr><td class='label' colspan='" . ($CPR + 1) . "'>&nbsp;</td></tr>\n";
+                        }
+                        echo "<tr>";
+                        if ($group_name) {
+                            echo "<td class='groupname'>";
+                            echo text(xl_layout_label($group_name));
+                            $group_name = '';
+                        } else {
+                            echo "<td class='align-top'>&nbsp;";
+                        }
 
-                      echo "</td>";
+                        echo "</td>";
+                    }
                 }
 
                 if ($item_count == 0 && $titlecols == 0) {
@@ -3683,48 +3690,66 @@ function display_layout_rows($formtype, $result1, $result2 = '')
 
                 // Handle starting of a new label cell.
                 if ($titlecols > 0 || $span_col_row) {
-                    disp_end_cell();
+                    disp_end_cell(as_csv: $as_csv);
                     $titlecols = $span_col_row ? 0 : $titlecols;
-                    $titlecols_esc = htmlspecialchars($titlecols, ENT_QUOTES);
-                    if (!$span_col_row) {
-                        echo "<td class='label_custom' colspan='$titlecols_esc' ";
-                        echo ">";
+                    if (!$as_csv) {
+                        $titlecols_esc = htmlspecialchars($titlecols, ENT_QUOTES);
+                        if (!$span_col_row) {
+                            echo "<td class='label_custom' colspan='$titlecols_esc' ";
+                            echo ">";
+                        }
                     }
                     $cell_count += $titlecols;
                 }
 
                 ++$item_count;
 
-                // Prevent title write if span entire row.
-                if (!$span_col_row) {
-                    // Added 5-09 by BM - Translate label if applicable
-                    if ($frow['title']) {
-                        $tmp = xl_layout_label($frow['title']);
-                        echo text($tmp);
-                        // Append colon only if label does not end with punctuation.
-                        if (strpos('?!.,:-=', substr($tmp, -1, 1)) === false) {
-                            echo ':';
+                if (!$as_csv) {
+                    // Prevent title write if span entire row.
+                    if (!$span_col_row) {
+                        // Added 5-09 by BM - Translate label if applicable
+                        if ($frow['title']) {
+                            $tmp = xl_layout_label($frow['title']);
+                            echo text($tmp);
+                            // Append colon only if label does not end with punctuation.
+                            if (strpos('?!.,:-=', substr($tmp, -1, 1)) === false) {
+                                echo ':';
+                            }
+                        } else if (!$as_csv) {
+                            echo "&nbsp;";
                         }
-                    } else {
-                        echo "&nbsp;";
                     }
+                } else {
+                    if ($frow['title']) {
+                        $csv_last_column = csvEscape($group_name . " " . xl_layout_label($frow['title']));
+                    }
+                    array_push($csv_columns, $csv_last_column);
                 }
                 // Handle starting of a new data cell.
                 if ($datacols > 0) {
-                    disp_end_cell();
+                    disp_end_cell(as_csv: $as_csv);
                     $datacols = $span_col_row ? $CPR : $datacols;
-                    $datacols_esc = htmlspecialchars($datacols, ENT_QUOTES);
-                    echo "<td class='text data' colspan='$datacols_esc'";
-                    echo ">";
+                    if (!$as_csv) {
+                        $datacols_esc = htmlspecialchars($datacols, ENT_QUOTES);
+                        echo "<td class='text data' colspan='$datacols_esc'";
+                        echo ">";
+                    }
                     $cell_count += $datacols;
                 }
 
                 ++$item_count;
-                echo generate_display_field($frow, $currvalue);
+                if (!$as_csv) {
+                    echo generate_display_field($frow, $currvalue);
+                } else {
+                    array_push($csv_fields, csvEscape(generate_display_field($frow, $currvalue)));
+                }
             }
         }
-        disp_end_group();
+        disp_end_group(as_csv: $as_csv);
     } // End this layout, there may be more in the case of history.
+    if ($as_csv) {
+        echo implode(",", $csv_columns) . "\n" . implode(",", $csv_fields) . "\n";
+    }
 }
 
 // This generates the tabs for a form.

@@ -430,7 +430,7 @@ if ($PDF_OUTPUT) { ?>
                         // printRecDataOne($patient_data_array, getRecPatientData ($pid), $N);
                         $result1 = getPatientData($pid);
                         $result2 = getEmployerData($pid);
-                        display_layout_rows('DEM', $result1, $result2);
+                        display_layout_rows('DEM', $result1, $result2, as_csv: $csv);
                         if (!$csv) {
                             echo "   </table></div>\n";
                             echo "</div>\n";
