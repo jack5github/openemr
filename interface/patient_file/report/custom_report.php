@@ -79,8 +79,10 @@ $printable = empty($_GET['printable']) ? false : true;
 if ($PDF_OUTPUT) {
     $printable = true;
 }
+$csv = empty($_GET['csv']) ? false : true;
 
 unset($_GET['printable']);
+unset($_GET['csv']);
 
 // Number of columns in tables for insurance and encounter forms.
 $N = $PDF_OUTPUT ? 4 : 6;
@@ -165,17 +167,22 @@ function zip_content($source, $destination, $content = '', $create = true)
     return $zip->close();
 }
 
-?>
-
-<?php if ($PDF_OUTPUT) { ?>
+if ($PDF_OUTPUT) { ?>
     <?php Header::setupAssets(['pdf-style', 'esign-theme-only']); ?>
-<?php } else { ?>
+<?php } else if ($csv) {
+    header("Pragma: public");
+    header("Expires: 0");
+    header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+    header("Content-Type: application/force-download");
+    header("Content-Disposition: attachment; filename=patient_report.csv");
+    header("Content-Description: File Transfer");
+} else { ?>
 <html>
 <head>
     <?php Header::setupHeader(['esign-theme-only', 'search-highlight']); ?>
-    <?php } ?>
-
-    <?php // do not show stuff from report.php in forms that is encaspulated
+    <?php }
+    if (!$csv) {
+    // do not show stuff from report.php in forms that is encaspulated
     // by div of navigateLink class. Specifically used for CAMOS, but
     // can also be used by other forms that require output in the
     // encounter listings output, but not in the custom report. ?>
@@ -210,7 +217,7 @@ function zip_content($source, $destination, $content = '', $create = true)
 <body>
     <div class="container">
         <div id="report_custom w-100">  <!-- large outer DIV -->
-            <?php
+            <?php }
             if (sizeof($_GET) > 0) {
                 $ar = $_GET;
             } else {
@@ -251,7 +258,7 @@ function zip_content($source, $destination, $content = '', $create = true)
 
                 echo genFacilityTitle(getPatientName($pid), $_SESSION['pc_facility'], $logo); ?>
 
-            <?php } else { // not printable
+            <?php } else if (!$csv) { // not printable
                 ?>
                 <div class="border-bottom fixed-top px-5 pt-4 report_search_bar">
                     <div class="row">
@@ -317,9 +324,10 @@ function zip_content($source, $destination, $content = '', $create = true)
                 <a href="custom_report.php?printable=1&<?php print postToGet($ar); ?>" class='link_submit' target='new' onclick='top.restoreSession()'>
                     [<?php echo xlt('Printable Version'); ?>]
                 </a>
-            <?php } // end not printable ?>
-
-            <?php
+                <a href='custom_report.php?csv=1&<?php print postToGet($ar); ?>' class='link_submit' target='new' onclick='top.restoreSession()'>
+                    [<?php echo xlt('Export to CSV'); ?>]
+                </a>
+            <?php } // end not printable
 
             // include ALL form's report.php files
             $inclookupres = sqlStatement("select distinct formdir from forms where pid = ? AND deleted=0", array($pid));
@@ -349,9 +357,13 @@ function zip_content($source, $destination, $content = '', $create = true)
                 if (stristr($key, "include_")) {
                     if ($val == "recurring_days") {
                         /// label/header for recurring days
-                        echo "<hr />";
-                        echo "<div class='text' id='appointments'>\n";
-                        print "<h4>" . xlt('Recurrent Appointments') . ":</h4>";
+                        if (!$csv) {
+                            echo "<hr />";
+                            echo "<div class='text' id='appointments'>\n";
+                            print "<h4>" . xlt('Recurrent Appointments') . ":</h4>";
+                        } else {
+                            echo csvEscape("<BEGIN " . xlt("Recurrent Appointments") . ">") . "\n";
+                        }
 
                         //fetch the data of the recurring days
                         $recurrences = fetchRecurrences($pid);
@@ -385,55 +397,139 @@ function zip_content($source, $destination, $content = '', $create = true)
                                 echo "<br />";
                             }
                         }
-
-                        echo "</div><br />";
+                        if (!$csv) {
+                            echo "</div><br />";
+                        } else {
+                            echo csvEscape("<END " . xlt("Recurrent Appointments") . ">") . "\n";
+                        }
                     } elseif ($val == "demographics") {
-                        echo "<hr />";
-                        echo "<div class='text demographics' id='DEM'>\n";
-                        print "<h4>" . xlt('Patient Data') . ":</h4>";
+                        /**
+                         * CSV export incomplete
+                         */ 
+                        if (!$csv) {
+                            echo "<hr />";
+                            echo "<div class='text demographics' id='DEM'>\n";
+                            print "<h4>" . xlt('Patient Data') . ":</h4>";
+                            echo "   <div class='table-responsive'><table class='table'>\n";
+                        } else {
+                            echo csvEscape("<BEGIN " . xlt("Patient Data") . ">") . "\n";
+                        }
                         // printRecDataOne($patient_data_array, getRecPatientData ($pid), $N);
                         $result1 = getPatientData($pid);
                         $result2 = getEmployerData($pid);
-                        echo "   <div class='table-responsive'><table class='table'>\n";
                         display_layout_rows('DEM', $result1, $result2);
-                        echo "   </table></div>\n";
-                        echo "</div>\n";
-                    } elseif ($val == "history") {
-                        echo "<hr />";
-                        echo "<div class='text history' id='HIS'>\n";
-                        if (AclMain::aclCheckCore('patients', 'med')) {
-                            print "<h4>" . xlt('History Data') . ":</h4>";
-                            // printRecDataOne($history_data_array, getRecHistoryData ($pid), $N);
-                            $result1 = getHistoryData($pid);
-                            echo "   <table>\n";
-                            display_layout_rows('HIS', $result1);
-                            echo "   </table>\n";
+                        if (!$csv) {
+                            echo "   </table></div>\n";
+                            echo "</div>\n";
+                        } else {
+                            echo csvEscape("<END " . xlt("Patient Data") . ">") . "\n";
                         }
+                    } elseif ($val == "history") {
+                        /**
+                         * CSV export incomplete
+                         */ 
+                        if (AclMain::aclCheckCore('patients', 'med')) {
+                            if (!$csv) {
+                                echo "<hr />";
+                                echo "<div class='text history' id='HIS'>\n";
+                                print "<h4>" . xlt('History Data') . ":</h4>";
+                                // printRecDataOne($history_data_array, getRecHistoryData ($pid), $N);
+                                echo "   <table>\n";
+                            } else {
+                                echo csvEscape("<BEGIN " . xlt('History Data') . ">") . "\n";
+                            }
+                            $result1 = getHistoryData($pid);
+                            display_layout_rows('HIS', $result1);
+                            if (!$csv) {
+                                echo "   </table>\n";
 
-                        echo "</div>";
+                                echo "</div>";
 
-                        // } elseif ($val == "employer") {
-                        //   print "<br /><span class='bold'>".xl('Employer Data').":</span><br />";
-                        //   printRecDataOne($employer_data_array, getRecEmployerData ($pid), $N);
+                                // } elseif ($val == "employer") {
+                                //   print "<br /><span class='bold'>".xl('Employer Data').":</span><br />";
+                                //   printRecDataOne($employer_data_array, getRecEmployerData ($pid), $N);
+                            } else {
+                                echo csvEscape("<END " . xlt('History Data') . ">") . "\n";
+                            }
+                        }
                     } elseif ($val == "insurance") {
-                        echo "<hr />";
-                        echo "<div class='text insurance'>";
-                        echo "<h4>" . xlt('Insurance Data') . ":</h4>";
-                        print "<br /><span class='font-weight-bold'>" . xlt('Primary Insurance Data') . ":</span><br />";
-                        printRecDataOne($insurance_data_array, getRecInsuranceData($pid, "primary"), $N);
-                        print "<span class='font-weight-bold'>" . xlt('Secondary Insurance Data') . ":</span><br />";
-                        printRecDataOne($insurance_data_array, getRecInsuranceData($pid, "secondary"), $N);
-                        print "<span class='font-weight-bold'>" . xlt('Tertiary Insurance Data') . ":</span><br />";
-                        printRecDataOne($insurance_data_array, getRecInsuranceData($pid, "tertiary"), $N);
-                        echo "</div>";
+                        if (!$csv) {
+                            echo "<hr />";
+                            echo "<div class='text insurance'>";
+                            echo "<h4>" . xlt('Insurance Data') . ":</h4>";
+                            print "<br /><span class='font-weight-bold'>" . xlt('Primary Insurance Data') . ":</span><br />";
+                            printRecDataOne($insurance_data_array, getRecInsuranceData($pid, "primary"), $N);
+                            print "<span class='font-weight-bold'>" . xlt('Secondary Insurance Data') . ":</span><br />";
+                            printRecDataOne($insurance_data_array, getRecInsuranceData($pid, "secondary"), $N);
+                            print "<span class='font-weight-bold'>" . xlt('Tertiary Insurance Data') . ":</span><br />";
+                            printRecDataOne($insurance_data_array, getRecInsuranceData($pid, "tertiary"), $N);
+                            echo "</div>";
+                        } else {
+                            echo csvEscape("<BEGIN " . xlt('Insurance Data') . ">") . "\n";
+                            // CSV headers:
+                            $insurance_columns = array_keys(getRecInsuranceData($pid, "primary"));
+                            array_splice($insurance_columns, 23); // Everything from copay onwards is not shown in a normal export
+                            $insurance_columns_escaped = $insurance_columns;
+                            for ($col = 0; $col < count($insurance_columns_escaped); $col++) {
+                                switch ($insurance_columns_escaped[$col]) {
+                                    case "subscriber_lname":
+                                        $insurance_columns_escaped[$col] = "Subscriber Last Name"; break;
+                                    case "subscriber_mname":
+                                        $insurance_columns_escaped[$col] = "Subscriber Middle Name"; break;
+                                    case "subscriber_fname":
+                                        $insurance_columns_escaped[$col] = "Subscriber First Name"; break;
+                                    case "subscriber_ss":
+                                        $insurance_columns_escaped[$col] = "Subscriber SS"; break;
+                                    case "subscriber_DOB":
+                                        $insurance_columns_escaped[$col] = "Subscriber Date of Birth"; break;
+                                    case "subscriber_street":
+                                        $insurance_columns_escaped[$col] = "Subscriber Address"; break;
+                                    case "subscriber_postal_code":
+                                        $insurance_columns_escaped[$col] = "Subscriber Zip"; break;
+                                    case "subscriber_employer_postal_code":
+                                        $insurance_columns_escaped[$col] = "Subscriber Employer Zip"; break;
+                                    default:
+                                        $insurance_columns_escaped[$col] = ucwords(str_replace('_', ' ', $insurance_columns_escaped[$col]));
+                                }
+                                $insurance_columns_escaped[$col] = csvEscape($insurance_columns_escaped[$col]);
+                            }
+                            echo implode(',', $insurance_columns_escaped) . "\n";
+                            foreach (["primary", "secondary", "tertiary"] as $insurance_type) {
+                                $insurance_object = getRecInsuranceData($pid, $insurance_type);
+                                $fields_string = '';
+                                foreach ($insurance_columns as $key) {
+                                    if ($fields_string != '') {
+                                        $fields_string = $fields_string . ",";
+                                    }
+                                    if ($key == "provider") {
+                                        $key = "provider_name";
+                                    }
+                                    if ($key == "type") {
+                                        $insurance_object[$key][1]["value"] = ucwords($insurance_object[$key][1]["value"]);
+                                    }
+                                    $fields_string = $fields_string . csvEscape($insurance_object[$key][1]["value"]);
+                                }
+                                echo $fields_string . "\n";
+                            }
+                            echo csvEscape("<END " . xlt('Insurance Data') . ">") . "\n";
+                        }
                     } elseif ($val == "billing") {
-                        echo "<hr />";
-                        echo "<div class='text billing'>";
-                        print "<h4>" . xlt('Billing Information') . ":</h4>";
+                        /**
+                         * CSV export incomplete
+                         */ 
+                        if (!$csv) {
+                            echo "<hr />";
+                            echo "<div class='text billing'>";
+                            print "<h4>" . xlt('Billing Information') . ":</h4>";
+                        } else {
+                            echo csvEscape("<BEGIN " . xlt('Billing Information') . ">") . "\n";
+                        }
                         if (!empty($ar['newpatient']) && count($ar['newpatient']) > 0) {
                             $billings = array();
-                            echo "<div class='table-responsive'><table class='table'>";
-                            echo "<tr><td class='font-weight-bold'>" . xlt('Code') . "</td><td class='font-weight-bold'>" . xlt('Fee') . "</td></tr>\n";
+                            if (!$csv) {
+                                echo "<div class='table-responsive'><table class='table'>";
+                                echo "<tr><td class='font-weight-bold'>" . xlt('Code') . "</td><td class='font-weight-bold'>" . xlt('Fee') . "</td></tr>\n";
+                            }
                             $total = 0.00;
                             $copays = 0.00;
                             foreach ($ar['newpatient'] as $be) {
@@ -441,14 +537,16 @@ function zip_content($source, $destination, $content = '', $create = true)
                                 $billing = getPatientBillingEncounter($pid, $ta[1]);
                                 $billings[] = $billing;
                                 foreach ($billing as $b) {
-                                    echo "<tr>\n";
-                                    echo "<td class='text'>";
-                                    echo text($b['code_type']) . ":\t" . text($b['code']) . "&nbsp;" . text($b['modifier']) . "&nbsp;&nbsp;&nbsp;" . text($b['code_text']) . "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-                                    echo "</td>\n";
-                                    echo "<td class='text'>";
-                                    echo text(oeFormatMoney($b['fee']));
-                                    echo "</td>\n";
-                                    echo "</tr>\n";
+                                    if (!$csv) {
+                                        echo "<tr>\n";
+                                        echo "<td class='text'>";
+                                        echo text($b['code_type']) . ":\t" . text($b['code']) . "&nbsp;" . text($b['modifier']) . "&nbsp;&nbsp;&nbsp;" . text($b['code_text']) . "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                                        echo "</td>\n";
+                                        echo "<td class='text'>";
+                                        echo text(oeFormatMoney($b['fee']));
+                                        echo "</td>\n";
+                                        echo "</tr>\n";
+                                    }
                                     $total += $b['fee'];
                                     if ($b['code_type'] == "COPAY") {
                                         $copays += $b['fee'];
@@ -456,24 +554,38 @@ function zip_content($source, $destination, $content = '', $create = true)
                                 }
                             }
 
-                            echo "<tr><td>&nbsp;</td></tr>";
-                            echo "<tr><td class='font-weight-bold'>" . xlt('Sub-Total') . "</td><td class='text'>" . text(oeFormatMoney($total + abs($copays))) . "</td></tr>";
-                            echo "<tr><td class='font-weight-bold'>" . xlt('Paid') . "</td><td class='text'>" . text(oeFormatMoney(abs($copays))) . "</td></tr>";
-                            echo "<tr><td class='font-weight-bold'>" . xlt('Total') . "</td><td class='text'>" . text(oeFormatMoney($total)) . "</td></tr>";
-                            echo "</table></div>";
-                            echo "<pre>";
-                            //print_r($billings);
-                            echo "</pre>";
+                            if (!$csv) {
+                                echo "<tr><td>&nbsp;</td></tr>";
+                                echo "<tr><td class='font-weight-bold'>" . xlt('Sub-Total') . "</td><td class='text'>" . text(oeFormatMoney($total + abs($copays))) . "</td></tr>";
+                                echo "<tr><td class='font-weight-bold'>" . xlt('Paid') . "</td><td class='text'>" . text(oeFormatMoney(abs($copays))) . "</td></tr>";
+                                echo "<tr><td class='font-weight-bold'>" . xlt('Total') . "</td><td class='text'>" . text(oeFormatMoney($total)) . "</td></tr>";
+                                echo "</table></div>";
+                                echo "<pre>";
+                                //print_r($billings);
+                                echo "</pre>";
+                            }
                         } else {
                             printPatientBilling($pid);
                         }
 
-                        echo "</div>\n"; // end of billing DIV
+                        if (!$csv) {
+                            echo "</div>\n"; // end of billing DIV
+                        } else {
+                            echo csvEscape("<END " . xlt('Billing Information') . ">") . "\n";
+                        }
                     } elseif ($val == "immunizations") {
                         if (AclMain::aclCheckCore('patients', 'med')) {
-                            echo "<hr />";
-                            echo "<div class='text immunizations'>\n";
-                            print "<h4>" . xlt('Patient Immunization') . ":</h4>";
+                            if (!$csv) {
+                                echo "<hr />";
+                                echo "<div class='text immunizations'>\n";
+                                print "<h4>" . xlt('Patient Immunization') . ":</h4>";
+                            } else {
+                                echo csvEscape("<BEGIN " . xlt('Patient Immunization') . ">") . "\n";
+                                // CSV headers:
+                                echo csvEscape("Date") . ",";
+                                echo csvEscape("Vaccine") . ",";
+                                echo csvEscape("Notes") . "\n";
+                            }
                             $sql = "select i1.immunization_id, i1.administered_date, substring(i1.note,1,20) as immunization_note, c.code_text_short " .
                                 " from immunizations i1 " .
                                 " left join code_types ct on ct.ct_key = 'CVX' " .
@@ -483,32 +595,41 @@ function zip_content($source, $destination, $content = '', $create = true)
                             $result = sqlStatement($sql, array($pid));
                             while ($row = sqlFetchArray($result)) {
                                 // Figure out which name to use (ie. from cvx list or from the custom list)
-                                if ($GLOBALS['use_custom_immun_list']) {
+                                if ($GLOBALS['use_custom_immun_list'] || empty($row['code_text_short'])) {
                                     $vaccine_display = generate_display_field(array('data_type' => '1', 'list_id' => 'immunizations'), $row['immunization_id']);
                                 } else {
-                                    if (!empty($row['code_text_short'])) {
-                                        $vaccine_display = xlt($row['code_text_short']);
-                                    } else {
-                                        $vaccine_display = generate_display_field(array('data_type' => '1', 'list_id' => 'immunizations'), $row['immunization_id']);
+                                    $vaccine_display = xlt($row['code_text_short']);
+                                }
+                                if (!$csv) {
+                                    echo text($row['administered_date']) . " - " . $vaccine_display;
+                                    if ($row['immunization_note']) {
+                                        echo " - " . text($row['immunization_note']);
                                     }
+                                    echo "<br />\n";
+                                } else {
+                                    echo csvEscape($row['administered_date']) . "," . csvEscape($vaccine_display) . "," . csvEscape($row['immunization_note']) . "\n";
                                 }
-
-                                echo text($row['administered_date']) . " - " . $vaccine_display;
-                                if ($row['immunization_note']) {
-                                    echo " - " . text($row['immunization_note']);
-                                }
-
-                                echo "<br />\n";
                             }
 
-                            echo "</div>\n";
+                            if (!$csv) {
+                                echo "</div>\n";
+                            } else {
+                                echo csvEscape("<END " . xlt('Patient Immunization') . ">") . "\n";
+                            }
                         }
 
-                        // communication report
+                    // communication report
                     } elseif ($val == "batchcom") {
-                        echo "<hr />";
-                        echo "<div class='text transactions'>\n";
-                        print "<h4>" . xlt('Patient Communication sent') . ":</h4>";
+                        /**
+                         * CSV export incomplete
+                         */ 
+                        if (!$csv) {
+                            echo "<hr />";
+                            echo "<div class='text transactions'>\n";
+                            print "<h4>" . xlt('Patient Communication sent') . ":</h4>";
+                        } else {
+                            echo csvEscape("<BEGIN " . xlt('Patient Communication sent') . ">") . "\n";
+                        }
                         $sql = "SELECT concat( 'Messsage Type: ', batchcom.msg_type, ', Message Subject: ', batchcom.msg_subject, ', Sent on:', batchcom.msg_date_sent ) AS batchcom_data, batchcom.msg_text, concat( users.fname, users.lname ) AS user_name FROM `batchcom` JOIN `users` ON users.id = batchcom.sent_by WHERE batchcom.patient_id=?";
                         // echo $sql;
                         $result = sqlStatement($sql, array($pid));
@@ -516,26 +637,61 @@ function zip_content($source, $destination, $content = '', $create = true)
                             echo text($row['batchcom_data']) . ", By: " . text($row['user_name']) . "<br />Text:<br /> " . text($row['msg_txt']) . "<br />\n";
                         }
 
-                        echo "</div>\n";
+                        if (!$csv) {
+                            echo "</div>\n";
+                        } else {
+                            echo csvEscape("<END " . xlt('Patient Communication sent') . ">") . "\n";
+                        }
                     } elseif ($val == "notes") {
-                        echo "<hr />";
-                        echo "<div class='text notes'>\n";
-                        print "<h4>" . xlt('Patient Notes') . ":</h4>";
-                        printPatientNotes($pid);
-                        echo "</div>";
+                        if (!$csv) {
+                            echo "<hr />";
+                            echo "<div class='text notes'>\n";
+                            print "<h4>" . xlt('Patient Notes') . ":</h4>";
+                        } else {
+                            echo csvEscape("<BEGIN " . xlt('Patient Notes') . ">") . "\n";
+                            // CSV headers:
+                            echo csvEscape("Date") . ",";
+                            echo csvEscape("From") . ",";
+                            echo csvEscape("To") . ",";
+                            echo csvEscape("Body") . "\n";
+                        }
+                        printPatientNotes($pid, as_csv: $csv);
+                        if (!$csv) {
+                            echo "</div>";
+                        } else {
+                            echo csvEscape("<END " . xlt('Patient Notes') . ">") . "\n";
+                        }
                     } elseif ($val == "transactions") {
-                        echo "<hr />";
-                        echo "<div class='text transactions'>\n";
-                        print "<h4>" . xlt('Patient Transactions') . ":</h4>";
+                        /**
+                         * CSV export incomplete
+                         */ 
+                        if (!$csv) {
+                            echo "<hr />";
+                            echo "<div class='text transactions'>\n";
+                            print "<h4>" . xlt('Patient Transactions') . ":</h4>";
+                        } else {
+                            echo csvEscape("<BEGIN " . xlt('Patient Transactions') . ">") . "\n";
+                        }
                         printPatientTransactions($pid);
-                        echo "</div>";
+                        if (!$csv) {
+                            echo "</div>";
+                        } else {
+                            echo csvEscape("<END " . xlt('Patient Transactions') . ">") . "\n";
+                        }
                     }
                 } else {
                     // Documents is an array of checkboxes whose values are document IDs.
                     //
                     if ($key == "documents") {
-                        echo "<hr />";
-                        echo "<div class='text documents'>";
+                        /**
+                         * CSV export incomplete
+                         */ 
+                        if (!$csv) {
+                            echo "<hr />";
+                            echo "<div class='text documents'>";
+                        } else {
+                            echo csvEscape("<BEGIN " . xlt('Document')) . "\n";
+                        }
                         foreach ($val as $valkey => $valvalue) {
                             $document_id = $valvalue;
                             if (!is_numeric($document_id)) {
@@ -550,155 +706,189 @@ function zip_content($source, $destination, $content = '', $create = true)
                             $extension = strtolower(substr($fname, strrpos($fname, ".")));
                             if ($extension != '.pdf') { // Will print pdf header within pdf import
                                 echo "<h5>" . xlt('Document') . " '" . text($fname) . "-" . text($d->get_id()) . "'</h5>";
+                            } else if ($csv) {
+                                echo csvEscape("<BEGIN " . text($fname) . "-" . text($d->get_id()) . ">") . "\n";
                             }
 
-                            $notes = $d->get_notes();
-                            if (!empty($notes)) {
-                                echo "<div class='table-responsive'><table class='table'>";
-                            }
-
-                            foreach ($notes as $note) {
-                                echo '<tr>';
-                                echo '<td>' . xlt('Note') . ' #' . text($note->get_id()) . '</td>';
-                                echo '</tr>';
-                                echo '<tr>';
-                                echo '<td>' . xlt('Date') . ': ' . text(oeFormatShortDate($note->get_date())) . '</td>';
-                                echo '</tr>';
-                                echo '<tr>';
-                                echo '<td>' . text($note->get_note()) . '<br /><br /></td>';
-                                echo '</tr>';
-                            }
-
-                            if (!empty($notes)) {
-                                echo "</table></div>";
-                            }
-
-                            // adding support for .txt MDM-TXA interface/orders/receive_hl7_results.inc.php
-                            if ($extension != (".pdf" || ".txt")) {
-                                $tempCDoc = new C_Document();
-                                $tempFile = $tempCDoc->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
-                                // tmp file in temporary_files_dir
-                                $tempFileName = tempnam($GLOBALS['temporary_files_dir'], "oer");
-                                file_put_contents($tempFileName, $tempFile);
-                                $image_data = getimagesize($tempFileName);
-                                $extension = image_type_to_extension($image_data[2]);
-                                unlink($tempFileName);
-                            }
-
-                            if ($extension == ".png" || $extension == ".jpg" || $extension == ".jpeg" || $extension == ".gif") {
-                                if ($PDF_OUTPUT) {
-                                    // OK to link to the image file because it will be accessed by the
-                                    // mPDF parser and not the browser.
-                                    $tempDocC = new C_Document();
-                                    $fileTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
-                                    // tmp file in ../documents/temp since need to be available via webroot
-                                    $from_file_tmp_web_name = tempnam($GLOBALS['OE_SITE_DIR'] . '/documents/temp', "oer");
-                                    file_put_contents($from_file_tmp_web_name, $fileTemp);
-                                    echo "<img src='$from_file_tmp_web_name'";
-                                    // Flag images with excessive width for possible stylesheet action.
-                                    $asize = getimagesize($from_file_tmp_web_name);
-                                    if ($asize[0] > 750) {
-                                        echo " class='bigimage'";
-                                    }
-                                    $tmp_files_remove[] = $from_file_tmp_web_name;
-                                    echo " /><br /><br />";
-                                } else {
-                                    echo "<img src='" . $GLOBALS['webroot'] .
-                                        "/controller.php?document&retrieve&patient_id=&document_id=" .
-                                        attr_url($document_id) . "&as_file=false&original_file=true&disable_exit=false&show_original=true'><br /><br />";
+                            if (!$csv) {
+                                $notes = $d->get_notes();
+                                if (!empty($notes)) {
+                                    echo "<div class='table-responsive'><table class='table'>";
                                 }
-                            } else {
-                                // Most clinic documents are expected to be PDFs, and in that happy case
-                                // we can avoid the lengthy image conversion process.
-                                if ($PDF_OUTPUT && $extension == ".pdf") {
-                                    echo "</div></div>\n"; // HTML to PDF conversion will fail if there are open tags.
-                                    $content = getContent();
-                                    $pdf->writeHTML($content); // catch up with buffer.
-                                    $err = '';
-                                    try {
-                                        // below header isn't being used. missed maybe!
-                                        $pg_header = "<span>" . xlt('Document') . " " . text($fname) . "-" . text($d->get_id()) . "</span>";
-                                        $tempDocC = new C_Document();
-                                        $pdfTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
-                                        // tmp file in temporary_files_dir
-                                        $from_file_tmp_name = tempnam($GLOBALS['temporary_files_dir'], "oer");
-                                        file_put_contents($from_file_tmp_name, $pdfTemp);
 
-                                        $pagecount = $pdf->setSourceFile($from_file_tmp_name);
-                                        for ($i = 0; $i < $pagecount; ++$i) {
-                                            $pdf->AddPage();
-                                            $itpl = $pdf->importPage($i + 1);
-                                            $pdf->useTemplate($itpl);
-                                        }
-                                    } catch (Exception $e) {
-                                        // chances are PDF is > v1.4 and compression level not supported.
-                                        // regardless, we're here so lets dispose in different way.
-                                        //
-                                        unlink($from_file_tmp_name);
-                                        $archive_name = ($GLOBALS['temporary_files_dir'] . '/' . report_basename($pid)['base'] . ".zip");
-                                        $rtn = zip_content(basename($d->url), $archive_name, $pdfTemp);
-                                        $err = "<span>" . xlt('PDF Document Parse Error and not included. Check if included in archive.') . " : " . text($fname) . "</span>";
-                                        $pdf->writeHTML($err);
-                                        $staged_docs[] = array('path' => $d->url, 'fname' => $fname);
-                                    } finally {
-                                        unlink($from_file_tmp_name);
-                                        // Make sure whatever follows is on a new page. Maybe!
-                                        // okay if not a series of pdfs so if so need @todo
-                                        if (empty($err)) {
-                                            $pdf->AddPage();
-                                        }
-                                        // Resume output buffering and the above-closed tags.
-                                        ob_start();
-                                        echo "<div><div class='text documents'>\n";
-                                    }
-                                } elseif ($extension == ".txt") {
-                                    echo "<pre>";
-                                    $tempDocC = new C_Document();
-                                    $textTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
-                                    echo text($textTemp);
-                                    echo "</pre>";
-                                } else {
+                                foreach ($notes as $note) {
+                                    echo '<tr>';
+                                    echo '<td>' . xlt('Note') . ' #' . text($note->get_id()) . '</td>';
+                                    echo '</tr>';
+                                    echo '<tr>';
+                                    echo '<td>' . xlt('Date') . ': ' . text(oeFormatShortDate($note->get_date())) . '</td>';
+                                    echo '</tr>';
+                                    echo '<tr>';
+                                    echo '<td>' . text($note->get_note()) . '<br /><br /></td>';
+                                    echo '</tr>';
+                                }
+
+                                if (!empty($notes)) {
+                                    echo "</table></div>";
+                                }
+
+                                // adding support for .txt MDM-TXA interface/orders/receive_hl7_results.inc.php
+                                if ($extension != (".pdf" || ".txt")) {
+                                    $tempCDoc = new C_Document();
+                                    $tempFile = $tempCDoc->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
+                                    // tmp file in temporary_files_dir
+                                    $tempFileName = tempnam($GLOBALS['temporary_files_dir'], "oer");
+                                    file_put_contents($tempFileName, $tempFile);
+                                    $image_data = getimagesize($tempFileName);
+                                    $extension = image_type_to_extension($image_data[2]);
+                                    unlink($tempFileName);
+                                }
+
+                                if ($extension == ".png" || $extension == ".jpg" || $extension == ".jpeg" || $extension == ".gif") {
                                     if ($PDF_OUTPUT) {
-                                        // OK to link to the image file because it will be accessed by the mPDF parser and not the browser.
+                                        // OK to link to the image file because it will be accessed by the
+                                        // mPDF parser and not the browser.
                                         $tempDocC = new C_Document();
-                                        $fileTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, false, true, true);
+                                        $fileTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
                                         // tmp file in ../documents/temp since need to be available via webroot
                                         $from_file_tmp_web_name = tempnam($GLOBALS['OE_SITE_DIR'] . '/documents/temp', "oer");
                                         file_put_contents($from_file_tmp_web_name, $fileTemp);
-                                        echo "<img src='$from_file_tmp_web_name'><br /><br />";
+                                        echo "<img src='$from_file_tmp_web_name'";
+                                        // Flag images with excessive width for possible stylesheet action.
+                                        $asize = getimagesize($from_file_tmp_web_name);
+                                        if ($asize[0] > 750) {
+                                            echo " class='bigimage'";
+                                        }
                                         $tmp_files_remove[] = $from_file_tmp_web_name;
+                                        echo " /><br /><br />";
                                     } else {
-                                        if ($extension === '.pdf' || $extension === '.zip') {
-                                            echo "<strong>" . xlt('Available Document') . ":</strong><em> " . text($fname) . "</em><br />";
+                                        echo "<img src='" . $GLOBALS['webroot'] .
+                                            "/controller.php?document&retrieve&patient_id=&document_id=" .
+                                            attr_url($document_id) . "&as_file=false&original_file=true&disable_exit=false&show_original=true'><br /><br />";
+                                    }
+                                } else {
+                                    // Most clinic documents are expected to be PDFs, and in that happy case
+                                    // we can avoid the lengthy image conversion process.
+                                    if ($PDF_OUTPUT && $extension == ".pdf") {
+                                        echo "</div></div>\n"; // HTML to PDF conversion will fail if there are open tags.
+                                        $content = getContent();
+                                        $pdf->writeHTML($content); // catch up with buffer.
+                                        $err = '';
+                                        try {
+                                            // below header isn't being used. missed maybe!
+                                            $pg_header = "<span>" . xlt('Document') . " " . text($fname) . "-" . text($d->get_id()) . "</span>";
+                                            $tempDocC = new C_Document();
+                                            $pdfTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
+                                            // tmp file in temporary_files_dir
+                                            $from_file_tmp_name = tempnam($GLOBALS['temporary_files_dir'], "oer");
+                                            file_put_contents($from_file_tmp_name, $pdfTemp);
+
+                                            $pagecount = $pdf->setSourceFile($from_file_tmp_name);
+                                            for ($i = 0; $i < $pagecount; ++$i) {
+                                                $pdf->AddPage();
+                                                $itpl = $pdf->importPage($i + 1);
+                                                $pdf->useTemplate($itpl);
+                                            }
+                                        } catch (Exception $e) {
+                                            // chances are PDF is > v1.4 and compression level not supported.
+                                            // regardless, we're here so lets dispose in different way.
+                                            //
+                                            unlink($from_file_tmp_name);
+                                            $archive_name = ($GLOBALS['temporary_files_dir'] . '/' . report_basename($pid)['base'] . ".zip");
+                                            $rtn = zip_content(basename($d->url), $archive_name, $pdfTemp);
+                                            $err = "<span>" . xlt('PDF Document Parse Error and not included. Check if included in archive.') . " : " . text($fname) . "</span>";
+                                            $pdf->writeHTML($err);
+                                            $staged_docs[] = array('path' => $d->url, 'fname' => $fname);
+                                        } finally {
+                                            unlink($from_file_tmp_name);
+                                            // Make sure whatever follows is on a new page. Maybe!
+                                            // okay if not a series of pdfs so if so need @todo
+                                            if (empty($err)) {
+                                                $pdf->AddPage();
+                                            }
+                                            // Resume output buffering and the above-closed tags.
+                                            ob_start();
+                                            echo "<div><div class='text documents'>\n";
+                                        }
+                                    } elseif ($extension == ".txt") {
+                                        echo "<pre>";
+                                        $tempDocC = new C_Document();
+                                        $textTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
+                                        echo text($textTemp);
+                                        echo "</pre>";
+                                    } else {
+                                        if ($PDF_OUTPUT) {
+                                            // OK to link to the image file because it will be accessed by the mPDF parser and not the browser.
+                                            $tempDocC = new C_Document();
+                                            $fileTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, false, true, true);
+                                            // tmp file in ../documents/temp since need to be available via webroot
+                                            $from_file_tmp_web_name = tempnam($GLOBALS['OE_SITE_DIR'] . '/documents/temp', "oer");
+                                            file_put_contents($from_file_tmp_web_name, $fileTemp);
+                                            echo "<img src='$from_file_tmp_web_name'><br /><br />";
+                                            $tmp_files_remove[] = $from_file_tmp_web_name;
                                         } else {
-                                            echo "<img src='" . $GLOBALS['webroot'] . "/controller.php?document&retrieve&patient_id=&document_id=" . attr_url($document_id) . "&as_file=false&original_file=false'><br /><br />";
+                                            if ($extension === '.pdf' || $extension === '.zip') {
+                                                echo "<strong>" . xlt('Available Document') . ":</strong><em> " . text($fname) . "</em><br />";
+                                            } else {
+                                                echo "<img src='" . $GLOBALS['webroot'] . "/controller.php?document&retrieve&patient_id=&document_id=" . attr_url($document_id) . "&as_file=false&original_file=false'><br /><br />";
+                                            }
                                         }
                                     }
                                 }
+                            } else {
+                                echo csvEscape("<END " . text($fname) . "-" . text($d->get_id()) . ">") . "\n";
                             } // end if-else
                         } // end Documents loop
-                        echo "</div>";
+                        if (!$csv) {
+                            echo "</div>";
+                        } else {
+                            echo csvEscape("<END " . xlt('Document')) . "\n";
+                        }
                     } elseif ($key == "procedures") { // Procedures is an array of checkboxes whose values are procedure order IDs.
+                        /**
+                         * CSV export incomplete
+                         */ 
                         if ($auth_med) {
-                            echo "<hr />";
-                            echo "<div class='text documents'>";
+                            if (!$csv) {
+                                echo "<hr />";
+                                echo "<div class='text documents'>";
+                            } else {
+                                echo csvEscape("<BEGIN " . xlt('Procedure Order') . ">") . "\n";
+                            }
                             foreach ($val as $valkey => $poid) {
                                 if (empty($GLOBALS['esign_report_show_only_signed'])) {
-                                    echo '<h4>' . xlt('Procedure Order') . ':</h4>';
-                                    echo "<br />\n";
+                                    if (!$csv) {
+                                        echo '<h4>' . xlt('Procedure Order') . ':</h4>';
+                                        echo "<br />\n";
+                                    } else {
+                                        echo csvEscape("<BEGIN " . xlt('Procedure Order') . " " . $poid . ">") . "\n";
+                                    }
                                     generate_order_report($poid, false, !$PDF_OUTPUT);
-                                    echo "<br />\n";
+                                    if (!$csv) {
+                                        echo "<br />\n";
+                                    } else {
+                                        echo csvEscape("<END " . xlt('Procedure Order') . " " . $poid . ">") . "\n";
+                                    }
                                 }
                             }
-                            echo "</div>";
+                            if (!$csv) {
+                                echo "</div>";
+                            } else {
+                                echo csvEscape("<END " . xlt('Procedure Order') . ">") . "\n";
+                            }
                         }
                     } elseif (strpos($key, "issue_") === 0) {
+                        /**
+                         * CSV export incomplete
+                         */ 
                         // display patient Issues
                         if ($first_issue) {
                             $prevIssueType = 'asdf1234!@#$'; // random junk so as to not match anything
                             $first_issue = 0;
-                            echo "<hr />";
-                            echo "<h4>" . xlt("Issues") . "</h4>";
+                            if (!$csv) {
+                                echo "<hr />";
+                                echo "<h4>" . xlt("Issues") . "</h4>";
+                            }
                         }
 
                         preg_match('/^(.*)_(\d+)$/', $key, $res);
@@ -712,11 +902,17 @@ function zip_content($source, $destination, $content = '', $create = true)
                         if ($prevIssueType != $irow['type']) {
                             // output a header for each Issue Type we encounter
                             $disptype = $ISSUE_TYPES[$irow['type']][0];
-                            echo "<div class='issue_type font-weight-bold'><h5>" . text($disptype) . ":</h5></div>\n";
+                            if (!$csv) {
+                                echo "<div class='issue_type font-weight-bold'><h5>" . text($disptype) . ":</h5></div>\n";
+                            }
                             $prevIssueType = $irow['type'];
                         }
 
-                        echo "<div class='text issue'>";
+                        if (!$csv) {
+                            echo "<div class='text issue'>";
+                        } else {
+                            echo csvEscape("<BEGIN Issue " . text($irow['title']) . ">") . "\n";
+                        }
                         if ($prevIssueType == "medical_device") {
                             echo "<span class='issue_title'><span class='font-weight-bold'>" . xlt('Title') . ": </span>" . text($irow['title']) . "</span><br>";
                             echo "<span class='issue_title'>" . (new MedicalDevice($irow['udi_data']))->fullOutputHtml() . "</span>";
@@ -754,8 +950,15 @@ function zip_content($source, $destination, $content = '', $create = true)
                             echo "   </table></div>\n";
                         }
 
-                        echo "</div>\n"; //end the issue DIV
+                        if (!$csv) {
+                            echo "</div>\n"; //end the issue DIV
+                        } else {
+                            echo csvEscape("<END Issue " . text($irow['title']) . ">") . "\n";
+                        }
                     } else {
+                        /**
+                         * CSV export incomplete
+                         */ 
                         // we have an "encounter form" form field whose name is like
                         // dirname_formid, with a value which is the encounter ID.
                         //
@@ -770,12 +973,20 @@ function zip_content($source, $destination, $content = '', $create = true)
                             $dateres = getEncounterDateByEncounter($form_encounter);
                             $formId = getFormIdByFormdirAndFormid($res[1], $form_id);
 
+                            $encounter_classes = NULL;
+                            $encounter_title = NULL;
                             if ($res[1] == 'newpatient') {
-                                echo "<div class='text encounter'>\n";
-                                echo "<h4>" . xlt($formres["form_name"]) . "</h4>";
+                                $encounter_classes = "text encounter";
+                                $encounter_title = xlt($formres["form_name"]);
                             } else {
-                                echo "<div class='text encounter_form'>";
-                                echo "<h4>" . text(xl_form_title($formres["form_name"])) . "</h4>";
+                                $encounter_classes = "text encounter_form";
+                                $encounter_title = text(xl_form_title($formres["form_name"]));
+                            }
+                            if (!$csv) {
+                                echo "<div class='" . $encounter_classes . "'>\n";
+                                echo "<h4>" . $encounter_title . "</h4>";
+                            } else {
+                                echo csvEscape("<BEGIN Encounter " . $encounter_title . ">") . "\n";
                             }
 
                             // show the encounter's date
@@ -836,21 +1047,26 @@ function zip_content($source, $destination, $content = '', $create = true)
                                 }
                             }
 
-                            print "</div>";
+                            if (!$csv) {
+                                print "</div>";
+                            } else {
+                                echo csvEscape("<END Encounter " . $encounter_title . ">") . "\n";
+                            }
                         } // end auth-check for encounter forms
                     } // end if('issue_')... else...
                 } // end if('include_')... else...
             } // end $ar loop
 
-            if ($printable && !$PDF_OUTPUT) {// Patched out of pdf 04/20/2017 sjpadgett
-                echo "<br /><br />" . xlt('Signature') . ": _______________________________<br />";
-            }
-            ?>
+            if (!$csv) {
+                if ($printable && !$PDF_OUTPUT) {// Patched out of pdf 04/20/2017 sjpadgett
+                    echo "<br /><br />" . xlt('Signature') . ": _______________________________<br />";
+                }
+                ?>
 
         </div> <!-- end of report_custom DIV -->
     </div>
+    <?php }
 
-    <?php
     if ($PDF_OUTPUT) {
         $content = getContent();
         $ptd = report_basename($pid);
@@ -930,15 +1146,14 @@ function zip_content($source, $destination, $content = '', $create = true)
             // Remove the tmp files that were created
             unlink($tmp_file);
         }
-    } else {
-        ?>
-        <?php if (!$printable) { ?>
+    } else if (!$csv) {
+        if (!$printable) { ?>
         <script src="<?php echo $GLOBALS['web_root'] ?>/interface/patient_file/report/custom_report.js?v=<?php echo $v_js_includes; ?>"></script>
         <script>
             const searchBarHeight = document.querySelectorAll('.report_search_bar')[0].clientHeight;
             document.getElementById('backLink').style.marginTop = `${searchBarHeight}px`;
         </script>
-    <?php } ?>
+        <?php } ?>
 
 </body>
 </html>

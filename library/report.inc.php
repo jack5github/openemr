@@ -203,14 +203,18 @@ function printListData($pid, $list_type, $list_activity = "%")
     }
 }
 
-function printPatientNotes($pid)
+function printPatientNotes($pid, $as_csv = FALSE)
 {
   // exclude ALL deleted notes
     $res = sqlStatement("select * from pnotes where pid = ? and deleted != 1 and activity = 1 order by date", array($pid));
     while ($result = sqlFetchArray($res)) {
-        print "<span class='bold'>" . text(oeFormatSDFT(strtotime($result["date"]))) .
-        ":</span><span class='text'> " .
-            nl2br(text(oeFormatPatientNote($result['body']))) . "</span><br />\n";
+        if (!$as_csv) {
+            print "<span class='bold'>" . text(oeFormatSDFT(strtotime($result["date"]))) . ":</span><span class='text'> "
+                . nl2br(text(oeFormatPatientNote($result['body']))) . "</span><br />\n";
+        } else {
+            print csvEscape($result["date"]) . "," . csvEscape($result['user']) . ","
+                . csvEscape($result['assigned_to']) . "," . csvEscape($result['body']) . "\n";
+        }
     }
 }
 
