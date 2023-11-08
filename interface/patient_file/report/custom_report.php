@@ -467,8 +467,13 @@ if ($PDF_OUTPUT) { ?>
                         } else {
                             echo csvEscape("<BEGIN " . xlt('Insurance Data') . ">") . "\n";
                             // CSV headers:
-                            $insurance_columns = array_keys(getRecInsuranceData($pid, "primary"));
-                            array_splice($insurance_columns, 23); // Everything from copay onwards is not shown in a normal export
+                            $insurance_columns = [
+                                "type", "provider", "plan_name", "policy_number", "group_number", "subscriber_fname", "subscriber_mname",
+                                "subscriber_lname", "subscriber_relationship", "subscriber_ss", "subscriber_DOB", "subscriber_phone",
+                                "subscriber_street", "subscriber_postal_code", "subscriber_city", "subscriber_state", "subscriber_country",
+                                "subscriber_employer", "subscriber_employer_street", "subscriber_employer_city", "subscriber_employer_postal_code",
+                                "subcriber_employer_state", "subscriber_employer_country"
+                            ];
                             $insurance_columns_escaped = $insurance_columns;
                             for ($col = 0; $col < count($insurance_columns_escaped); $col++) {
                                 switch ($insurance_columns_escaped[$col]) {
@@ -505,9 +510,12 @@ if ($PDF_OUTPUT) { ?>
                                         $key = "provider_name";
                                     }
                                     if ($key == "type") {
-                                        $insurance_object[$key][1]["value"] = ucwords($insurance_object[$key][1]["value"]);
+                                        $fields_string = $fields_string . csvEscape(ucwords($insurance_type));
+                                    } else if (isset($insurance_object[$key])) {
+                                        $fields_string = $fields_string . csvEscape($insurance_object[$key][1]["value"]);
+                                    } else {
+                                        $fields_string = $fields_string . '""';
                                     }
-                                    $fields_string = $fields_string . csvEscape($insurance_object[$key][1]["value"]);
                                 }
                                 echo $fields_string . "\n";
                             }
