@@ -2458,7 +2458,7 @@ function generate_list_map($list_id, $translate = false)
     return $map;
 }
 
-function generate_display_field($frow, $currvalue)
+function generate_display_field($frow, $currvalue, $as_csv = FALSE)
 {
     global $ISSUE_TYPES, $facilityService;
 
@@ -2606,39 +2606,52 @@ function generate_display_field($frow, $currvalue)
         $s = htmlspecialchars($crow['pc_catname'], ENT_NOQUOTES);
     } elseif ($data_type == 21) { // a single checkbox or set of labeled checkboxes
         if (!$list_id) {
-            $s .= $currvalue ? '&#9745;' : '&#9744;';
+            if (!$as_csv) {
+                $s .= $currvalue ? '&#9745;' : '&#9744;';
+            }
         } else {
             // In this special case, fld_length is the number of columns generated.
             $cols = max(1, $frow['fld_length']);
             $avalue = explode('|', $currvalue);
             $lres = sqlStatement("SELECT * FROM list_options " .
                 "WHERE list_id = ? AND activity = 1 ORDER BY seq, title", array($list_id));
-            $s .= "<table cellspacing='0' cellpadding='0'>";
+            if (!$as_csv) {
+                $s .= "<table cellspacing='0' cellpadding='0'>";
+            }
             for ($count = 0; $lrow = sqlFetchArray($lres); ++$count) {
                 $option_id = $lrow['option_id'];
                 $option_id_esc = text($option_id);
-                if ($count % $cols == 0) {
+                if ($count % $cols == 0 && !$as_csv) {
                     if ($count) {
                         $s .= "</tr>";
                     }
                     $s .= "<tr>";
                 }
                 $checked = in_array($option_id, $avalue);
-                if (!$show_unchecked && $checked) {
-                    $s .= "<td nowrap>";
-                    $s .= text(xl_list_label($lrow['title'])) . '&nbsp;&nbsp;';
-                    $s .= "</td>";
-                } elseif ($show_unchecked) {
-                    $s .= "<td nowrap>";
-                    $s .= $checked ? '&#9745;' : '&#9744;';
-                    $s .= '&nbsp;' . text(xl_list_label($lrow['title'])) . '&nbsp;&nbsp;';
-                    $s .= "</td>";
+                if (!$as_csv) {
+                    if (!$show_unchecked && $checked) {
+                        $s .= "<td nowrap>";
+                        $s .= text(xl_list_label($lrow['title'])) . '&nbsp;&nbsp;';
+                        $s .= "</td>";
+                    } elseif ($show_unchecked) {
+                        $s .= "<td nowrap>";
+                        $s .= $checked ? '&#9745;' : '&#9744;';
+                        $s .= '&nbsp;' . text(xl_list_label($lrow['title'])) . '&nbsp;&nbsp;';
+                        $s .= "</td>";
+                    }
+                } else if ($checked) {
+                    if ($s != '') {
+                        $s .= ",";
+                    }
+                    $s .= csvEscape(xl_list_label($lrow['title']));
                 }
             }
-            if ($count) {
-                $s .= "</tr>";
+            if (!$as_csv) {
+                if ($count) {
+                    $s .= "</tr>";
+                }
+                $s .= "</table>";
             }
-            $s .= "</table>";
         }
     } elseif ($data_type == 22) { // a set of labeled text input fields
         $tmp = explode('|', $currvalue);
@@ -2676,7 +2689,9 @@ function generate_display_field($frow, $currvalue)
 
         $lres = sqlStatement("SELECT * FROM list_options " .
         "WHERE list_id = ? AND activity = 1 ORDER BY seq, title", array($list_id));
-        $s .= "<table class='table'>";
+        if (!$as_csv) {
+            $s .= "<table class='table'>";
+        }
         while ($lrow = sqlFetchArray($lres)) {
             $option_id = $lrow['option_id'];
             $restype = substr(($avalue[$option_id] ?? ''), 0, 1);
@@ -2685,18 +2700,26 @@ function generate_display_field($frow, $currvalue)
                 continue;
             }
 
-            // Added 5-09 by BM - Translate label if applicable
-            $s .= "<tr><td class='font-weight-bold align-top'>" . htmlspecialchars(xl_list_label($lrow['title']), ENT_NOQUOTES) . "&nbsp;</td>";
-
             $restype = ($restype == '1') ? xl('Normal') : (($restype == '2') ? xl('Abnormal') : xl('N/A'));
-            // $s .= "<td class='text align-top'>$restype</td></tr>";
-            // $s .= "<td class='text align-top'>$resnote</td></tr>";
-            $s .= "<td class='text align-top'>" . htmlspecialchars($restype, ENT_NOQUOTES) . "&nbsp;</td>";
-            $s .= "<td class='text align-top'>" . htmlspecialchars($resnote, ENT_NOQUOTES) . "</td>";
-            $s .= "</tr>";
+            if (!$as_csv) {
+                // Added 5-09 by BM - Translate label if applicable
+                $s .= "<tr><td class='font-weight-bold align-top'>" . htmlspecialchars(xl_list_label($lrow['title']), ENT_NOQUOTES) . "&nbsp;</td>";
+                // $s .= "<td class='text align-top'>$restype</td></tr>";
+                // $s .= "<td class='text align-top'>$resnote</td></tr>";
+                $s .= "<td class='text align-top'>" . htmlspecialchars($restype, ENT_NOQUOTES) . "&nbsp;</td>";
+                $s .= "<td class='text align-top'>" . htmlspecialchars($resnote, ENT_NOQUOTES) . "</td>";
+                $s .= "</tr>";
+            } else {
+                if ($s != '') {
+                    $s .= ";";
+                }
+                $s .= xl_list_label($lrow['title']) . "," . $restype . "," . $resnote;
+            }
         }
 
-        $s .= "</table>";
+        if (!$as_csv) {
+            $s .= "</table>";
+        }
     } elseif ($data_type == 24) { // the list of active allergies for the current patient
         $query = "SELECT title, comments FROM lists WHERE " .
         "pid = ? AND type = 'allergy' AND enddate IS NULL " .
@@ -2810,9 +2833,10 @@ function generate_display_field($frow, $currvalue)
                 break;
         }
 
-        $s .= "<table class='table'>";
+        if (!$as_csv) {
+            $s .= "<table class='table'><tr>";
+        }
 
-        $s .= "<tr>";
         $res = "";
         if ($restype == "current" . $field_id) {
             $res = xl('Current');
@@ -2834,34 +2858,69 @@ function generate_display_field($frow, $currvalue)
         // $s .= "<td class='text align-top'>$resnote</td></tr>";
         if ($data_type == 28) {
             if (!empty($resnote)) {
-                $s .= "<td class='text align-top'>" . htmlspecialchars($resnote, ENT_NOQUOTES) . "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>";
+                if (!$as_csv) {
+                    $s .= "<td class='text align-top'>" . htmlspecialchars($resnote, ENT_NOQUOTES) . "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>";
+                } else {
+                    $s .= $resnote;
+                }
             }
         } elseif ($data_type == 32) { //VicarePlus :: Tobacco field has a listbox, text box, date field and 3 radio buttons.
             // changes on 5-jun-2k14 (regarding 'Smoking Status - display SNOMED code description')
             $smoke_codes = getSmokeCodes();
             if (!empty($reslist)) {
+                $code_desc = '';
                 if ($smoke_codes[$reslist] != "") {
                     $code_desc = "( " . $smoke_codes[$reslist] . " )";
                 }
 
-                $s .= "<td class='text align-top'>" . generate_display_field(array('data_type' => '1','list_id' => $list_id), $reslist) . "&nbsp;" . text($code_desc) . "&nbsp;&nbsp;&nbsp;&nbsp;</td>";
+                if (!$as_csv) {
+                    $s .= "<td class='text align-top'>" . generate_display_field(array('data_type' => '1','list_id' => $list_id), $reslist)
+                        . "&nbsp;" . text($code_desc) . "&nbsp;&nbsp;&nbsp;&nbsp;</td>";
+                } else {
+                    $s .= generate_display_field(array('data_type' => '1','list_id' => $list_id), $reslist) . " " . text($code_desc);
+                }
+            }
+
+            if ($as_csv) {
+                $s .= ",";
             }
 
             if (!empty($resnote)) {
-                $s .= "<td class='text align-top'>" . htmlspecialchars($resnote, ENT_NOQUOTES) . "&nbsp;&nbsp;</td>";
+                if (!$as_csv) {
+                    $s .= "<td class='text align-top'>" . htmlspecialchars($resnote, ENT_NOQUOTES) . "&nbsp;&nbsp;</td>";
+                } else {
+                    $s .= $resnote;
+                }
             }
         }
 
+        if ($as_csv) {
+            $s .= ",";
+        }
+
         if (!empty($res)) {
-            $s .= "<td class='text align-top'><strong>" . htmlspecialchars(xl('Status'), ENT_NOQUOTES) . "</strong>:&nbsp;" . htmlspecialchars($res, ENT_NOQUOTES) . "&nbsp;</td>";
+            if (!$as_csv) {
+                $s .= "<td class='text align-top'><strong>" . htmlspecialchars(xl('Status'), ENT_NOQUOTES) . "</strong>:&nbsp;" . htmlspecialchars($res, ENT_NOQUOTES) . "&nbsp;</td>";
+            } else {
+                $s .= $res;
+            }
+        }
+
+        if ($as_csv) {
+            $s .= ",";
         }
 
         if ($restype == "quit" . $field_id) {
-            $s .= "<td class='text align-top'>" . htmlspecialchars($resdate, ENT_NOQUOTES) . "&nbsp;</td>";
+            if (!$as_csv) {
+                $s .= "<td class='text align-top'>" . htmlspecialchars($resdate, ENT_NOQUOTES) . "&nbsp;</td>";
+            } else {
+                $s .= $resdate;
+            }
         }
 
-        $s .= "</tr>";
-        $s .= "</table>";
+        if (!$as_csv) {
+            $s .= "</tr></table>";
+        }
     } elseif ($data_type == 31) { // static text.  read-only, of course.
         $s .= parse_static_text($frow);
     } elseif ($data_type == 34) {
@@ -3720,6 +3779,7 @@ function display_layout_rows($formtype, $result1, $result2 = '', $as_csv = FALSE
                         }
                     }
                 } else {
+                    // CSV headers:
                     if ($frow['title']) {
                         $csv_last_column = csvEscape($group_name . " " . xl_layout_label($frow['title']));
                     }
@@ -3741,7 +3801,7 @@ function display_layout_rows($formtype, $result1, $result2 = '', $as_csv = FALSE
                 if (!$as_csv) {
                     echo generate_display_field($frow, $currvalue);
                 } else {
-                    array_push($csv_fields, csvEscape(generate_display_field($frow, $currvalue)));
+                    array_push($csv_fields, csvEscape(generate_display_field($frow, $currvalue, as_csv: $as_csv)));
                 }
             }
         }

@@ -416,9 +416,6 @@ if ($PDF_OUTPUT) { ?>
                             echo csvEscape("<END " . xlt("Recurrent Appointments") . ">") . "\n";
                         }
                     } elseif ($val == "demographics") {
-                        /**
-                         * CSV export incomplete
-                         */ 
                         if (!$csv) {
                             echo "<hr />";
                             echo "<div class='text demographics' id='DEM'>\n";
@@ -438,9 +435,6 @@ if ($PDF_OUTPUT) { ?>
                             echo csvEscape("<END " . xlt("Patient Data") . ">") . "\n";
                         }
                     } elseif ($val == "history") {
-                        /**
-                         * CSV export incomplete
-                         */ 
                         if (AclMain::aclCheckCore('patients', 'med')) {
                             if (!$csv) {
                                 echo "<hr />";
@@ -452,7 +446,7 @@ if ($PDF_OUTPUT) { ?>
                                 echo csvEscape("<BEGIN " . xlt('History Data') . ">") . "\n";
                             }
                             $result1 = getHistoryData($pid);
-                            display_layout_rows('HIS', $result1);
+                            display_layout_rows('HIS', $result1, as_csv: $csv);
                             if (!$csv) {
                                 echo "   </table>\n";
 
@@ -517,17 +511,17 @@ if ($PDF_OUTPUT) { ?>
                                 $fields_string = '';
                                 foreach ($insurance_columns as $key) {
                                     if ($fields_string != '') {
-                                        $fields_string = $fields_string . ",";
+                                        $fields_string .= ",";
                                     }
                                     if ($key == "provider") {
                                         $key = "provider_name";
                                     }
                                     if ($key == "type") {
-                                        $fields_string = $fields_string . csvEscape(ucwords($insurance_type));
+                                        $fields_string .= csvEscape(ucwords($insurance_type));
                                     } else if (isset($insurance_object[$key])) {
-                                        $fields_string = $fields_string . csvEscape($insurance_object[$key][1]["value"]);
+                                        $fields_string .= csvEscape($insurance_object[$key][1]["value"]);
                                     } else {
-                                        $fields_string = $fields_string . '""';
+                                        $fields_string .= '""';
                                     }
                                 }
                                 echo $fields_string . "\n";
