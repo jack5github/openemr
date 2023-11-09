@@ -286,15 +286,20 @@ function printPatientTransactions($pid, $as_csv = false)
     }
 }
 
-function printPatientBilling($pid)
+function printPatientBilling($pid, $as_csv = false)
 {
     $res = sqlStatement("select * from billing where pid=? and activity = '1' order by date", array($pid));
     while ($result = sqlFetchArray($res)) {
-        echo "<span class='bold'>" . text(oeFormatSDFT(strtotime($result["date"]))) . " : </span>";
-        echo "<span class='text'>(" . text($result["code_type"]) . ") ";
-        echo $result['code_type'] == 'COPAY' ? text(FormatMoney::getFormattedMoney($result['code'])) : (text($result['code']) . ":" . text($result['modifier']));
-        echo " - " . wordwrap(text($result['code_text']), 70, "\n", true) . "</span>";
-        echo "<br />\n";
+        if (!$as_csv) {
+            echo "<span class='bold'>" . text(oeFormatSDFT(strtotime($result["date"]))) . " : </span>";
+            echo "<span class='text'>(" . text($result["code_type"]) . ") ";
+            echo $result['code_type'] == 'COPAY' ? text(FormatMoney::getFormattedMoney($result['code'])) : (text($result['code']) . ":" . text($result['modifier']));
+            echo " - " . wordwrap(text($result['code_text']), 70, "\n", true) . "</span>";
+            echo "<br />\n";
+        } else {
+            echo csvEscape($result["date"]) . "," . csvEscape($result["code_type"]) . "," . csvEscape($result['code']) . ","
+                . csvEscape($result['code_text']) . "," . csvEscape($result['modifier']) . "\n";
+        }
     }
 }
 

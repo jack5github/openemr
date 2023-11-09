@@ -529,15 +529,18 @@ if ($PDF_OUTPUT) { ?>
                             echo csvEscape("<END " . xlt('Insurance Data') . ">") . "\n";
                         }
                     } elseif ($val == "billing") {
-                        /**
-                         * CSV export incomplete
-                         */ 
                         if (!$csv) {
                             echo "<hr />";
                             echo "<div class='text billing'>";
                             print "<h4>" . xlt('Billing Information') . ":</h4>";
                         } else {
                             echo csvEscape("<BEGIN " . xlt('Billing Information') . ">") . "\n";
+                            // CSV headers:
+                            echo csvEscape("Date") . ",";
+                            echo csvEscape("Code Type") . ",";
+                            echo csvEscape("Code") . ",";
+                            echo csvEscape("Code Text") . ",";
+                            echo csvEscape("Modifier") . "\n";
                         }
                         if (!empty($ar['newpatient']) && count($ar['newpatient']) > 0) {
                             $billings = array();
@@ -561,6 +564,8 @@ if ($PDF_OUTPUT) { ?>
                                         echo text(oeFormatMoney($b['fee']));
                                         echo "</td>\n";
                                         echo "</tr>\n";
+                                    } else {
+                                        echo csvEscape($b['date']) . "," . csvEscape($b['code_type']) . "," . csvEscape($b['code']) . "," . csvEscape($b['code_text']) . "," . csvEscape($b['modifier']) . "\n";
                                     }
                                     $total += $b['fee'];
                                     if ($b['code_type'] == "COPAY") {
@@ -580,7 +585,7 @@ if ($PDF_OUTPUT) { ?>
                                 echo "</pre>";
                             }
                         } else {
-                            printPatientBilling($pid);
+                            printPatientBilling($pid, as_csv: $csv);
                         }
 
                         if (!$csv) {
