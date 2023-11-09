@@ -472,7 +472,7 @@ if ($PDF_OUTPUT) { ?>
                             printRecDataOne($insurance_data_array, getRecInsuranceData($pid, "tertiary"), $N);
                             echo "</div>";
                         } else {
-                            echo csvEscape("<BEGIN " . xlt('Insurance Data') . ">") . "\n";
+                            echo csvEscape("<BEGIN " . xlt("Insurance Data") . ">") . "\n";
                             // CSV headers:
                             $insurance_columns = [
                                 "type", "provider", "plan_name", "policy_number", "group_number", "subscriber_fname", "subscriber_mname",
@@ -526,7 +526,7 @@ if ($PDF_OUTPUT) { ?>
                                 }
                                 echo $fields_string . "\n";
                             }
-                            echo csvEscape("<END " . xlt('Insurance Data') . ">") . "\n";
+                            echo csvEscape("<END " . xlt("Insurance Data") . ">") . "\n";
                         }
                     } elseif ($val == "billing") {
                         if (!$csv) {
@@ -900,9 +900,6 @@ if ($PDF_OUTPUT) { ?>
                             }
                         }
                     } elseif (strpos($key, "issue_") === 0) {
-                        /**
-                         * CSV export incomplete
-                         */ 
                         // display patient Issues
                         if ($first_issue) {
                             $prevIssueType = 'asdf1234!@#$'; // random junk so as to not match anything
@@ -911,6 +908,32 @@ if ($PDF_OUTPUT) { ?>
                                 echo "<hr />";
                                 echo "<h4>" . xlt("Issues") . "</h4>";
                             }
+                        }
+
+                        if ($csv) {
+                            echo csvEscape("<BEGIN Issue>") . "\n";
+                            // CSV headers:
+                            echo csvEscape(xlt('Type')) . ",";
+                            echo csvEscape(xlt('Title')) . ",";
+                            echo csvEscape("Comments") . ",";
+                            echo csvEscape("Drug Dosage Instructions") . ",";
+                            echo csvEscape(xlt('Name (GMDN PT Name)')) . ",";
+                            echo csvEscape(xlt('Description')) . ",";
+                            echo csvEscape(xlt('Brand Name')) . ",";
+                            echo csvEscape(xlt('Company Name')) . ",";
+                            echo csvEscape(xlt('Version/Model Number')) . ",";
+                            echo csvEscape(xlt('DI (Device Identifier)')) . ",";
+                            echo csvEscape(xlt('Serial Number')) . ",";
+                            echo csvEscape(xlt('Lot Number')) . ",";
+                            echo csvEscape(xlt('Donation ID')) . ",";
+                            echo csvEscape(xlt('Expiration Date')) . ",";
+                            echo csvEscape(xlt('Manufacturing Date')) . ",";
+                            echo csvEscape(xlt('MRI Safety Status')) . ",";
+                            echo csvEscape(xlt('This device is required to be labeled as containing natural rubber latex or dry natural rubber.')) . ",";
+                            echo csvEscape(xlt('This device is labeled as a Human Cell, Tissue or Cellular or Tissue-Based Product (HCT/P).')) . ",";
+                            echo csvEscape(xlt('Issuing Agency')) . ",";
+                            echo csvEscape(xlt('Assigning Authority')) . ",";
+                            echo csvEscape(xlt('UDI (Unique Device Identifier)')) . "\n";
                         }
 
                         preg_match('/^(.*)_(\d+)$/', $key, $res);
@@ -926,39 +949,86 @@ if ($PDF_OUTPUT) { ?>
                             $disptype = $ISSUE_TYPES[$irow['type']][0];
                             if (!$csv) {
                                 echo "<div class='issue_type font-weight-bold'><h5>" . text($disptype) . ":</h5></div>\n";
+                            } else {
+                                echo csvEscape(text($disptype)) . ",";
                             }
                             $prevIssueType = $irow['type'];
                         }
 
                         if (!$csv) {
                             echo "<div class='text issue'>";
-                        } else {
-                            echo csvEscape("<BEGIN Issue " . text($irow['title']) . ">") . "\n";
                         }
                         if ($prevIssueType == "medical_device") {
-                            echo "<span class='issue_title'><span class='font-weight-bold'>" . xlt('Title') . ": </span>" . text($irow['title']) . "</span><br>";
-                            echo "<span class='issue_title'>" . (new MedicalDevice($irow['udi_data']))->fullOutputHtml() . "</span>";
-                            echo "<span class='issue_comments'> " . text($irow['comments']) . "</span><br><br>\n";
+                            if (!$csv) {
+                                echo "<span class='issue_title'><span class='font-weight-bold'>" . xlt('Title') . ": </span>" . text($irow['title']) . "</span><br>";
+                                echo "<span class='issue_title'>" . (new MedicalDevice($irow['udi_data']))->fullOutputHtml() . "</span>";
+                                echo "<span class='issue_comments'> " . text($irow['comments']) . "</span><br><br>\n";
+                            } else {
+                                echo csvEscape($irow['title']) . ",";
+                                echo csvEscape($irow['comments']);
+                                if ($irow['udi_data'] != '') {
+                                    $medical_device = json_decode($irow['udi_data'], true);
+                                    echo ',"",' . csvEscape($medical_device['deviceName']) . ",";
+                                    echo csvEscape($medical_device['deviceDescription']) . ",";
+                                    echo csvEscape($medical_device['brandName']) . ",";
+                                    echo csvEscape($medical_device['companyName']) . ",";
+                                    echo csvEscape($medical_device['versionModelNumber']) . ",";
+                                    echo csvEscape($medical_device['di']) . ",";
+                                    echo csvEscape($medical_device['serialNumber']) . ",";
+                                    echo csvEscape($medical_device['lotNumber']) . ",";
+                                    echo csvEscape($medical_device['donationId']) . ",";
+                                    echo csvEscape($medical_device['expirationDate']) . ",";
+                                    echo csvEscape($medical_device['manufacturingDate']) . ",";
+                                    echo csvEscape($medical_device['MRISafetyStatus']) . ",";
+                                    echo csvEscape($medical_device['labeledContainsNRL']) . ",";
+                                    echo csvEscape($medical_device['deviceHCTP']) . ",";
+                                    echo csvEscape($medical_device['issuingAgency']) . ",";
+                                    echo csvEscape($medical_device['udi']);
+                                }
+                                echo "\n";
+                            }
                         } else {
-                            echo "<span class='issue_title font-weight-bold'>" . text($irow['title']) . ":</span>";
-                            echo "<span class='issue_comments'> " . text($irow['comments']) . "</span>\n";
-                            if ($prevIssueType == "medication") {
-                                echo "<span class='issue_dosage_instructions'> " . text($irow['drug_dosage_instructions']) . "</span>\n";
+                            if (!$csv) {
+                                echo "<span class='issue_title font-weight-bold'>" . text($irow['title']) . ":</span>";
+                                echo "<span class='issue_comments'> " . text($irow['comments']) . "</span>\n";
+                                if ($prevIssueType == "medication") {
+                                    echo "<span class='issue_dosage_instructions'> " . text($irow['drug_dosage_instructions']) . "</span>\n";
+                                }
+                            } else {
+                                echo csvEscape($irow['title']) . "," . csvEscape($irow['comments']);
+                                if ($prevIssueType == "medication") {
+                                    echo "," . csvEscape($irow['drug_dosage_instructions']) ;
+                                }
+                                echo "\n";
                             }
                         }
 
                         // Show issue's chief diagnosis and its description:
                         if ($diagnosis) {
-                            echo "<div class='text issue_diag'>";
-                            echo "[" . xlt('Diagnosis') . "]<br />";
+                            if (!$csv) {
+                                echo "<div class='text issue_diag'>";
+                                echo "[" . xlt('Diagnosis') . "]<br />";
+                            } else {
+                                echo csvEscape("<BEGIN " . xlt('Diagnosis') . ">") . "\n";
+                                // CSV headers:
+                                echo csvEscape("Code") . "," . csvEscape("Description") . "\n";
+                            }
                             $dcodes = explode(";", $diagnosis);
                             foreach ($dcodes as $dcode) {
-                                echo "<span class='italic'>" . text($dcode) . "</span>: ";
-                                echo text(lookup_code_descriptions($dcode)) . "<br />\n";
+                                if (!$csv) {
+                                    echo "<span class='italic'>" . text($dcode) . "</span>: ";
+                                    echo text(lookup_code_descriptions($dcode)) . "<br />\n";
+                                } else {
+                                    echo csvEscape($dcode) . "," . csvEscape(lookup_code_descriptions($dcode)) . "\n";
+                                }
                             }
 
                             //echo $diagnosis." -- ".lookup_code_descriptions($diagnosis)."\n";
-                            echo "</div>";
+                            if (!$csv) {
+                                echo "</div>";
+                            } else {
+                                echo csvEscape("<END " . xlt('Diagnosis') . ">") . "\n";
+                            }
                         }
 
                         // Supplemental data for GCAC or Contraception issues.
@@ -975,12 +1045,9 @@ if ($PDF_OUTPUT) { ?>
                         if (!$csv) {
                             echo "</div>\n"; //end the issue DIV
                         } else {
-                            echo csvEscape("<END Issue " . text($irow['title']) . ">") . "\n";
+                            echo csvEscape("<END Issue>") . "\n";
                         }
                     } else {
-                        /**
-                         * CSV export incomplete
-                         */ 
                         // we have an "encounter form" form field whose name is like
                         // dirname_formid, with a value which is the encounter ID.
                         //
@@ -1017,7 +1084,7 @@ if ($PDF_OUTPUT) { ?>
 
                                 echo "<br />\n";
                             } else {
-                                echo csvEscape("<BEGIN " . $dateres["date"] . " " . getProviderName(getProviderIdOfEncounter($form_encounter)) . "," . $encounter_title . ">") . "\n";
+                                echo csvEscape("<BEGIN Encounter " . $dateres["date"] . " " . getProviderName(getProviderIdOfEncounter($form_encounter)) . "," . $encounter_title . ">") . "\n";
                             }
 
 
@@ -1031,6 +1098,7 @@ if ($PDF_OUTPUT) { ?>
                                         if (substr($res[1], 0, 3) == 'LBF') {
                                             lbf_report($pid, $form_encounter, $N, $form_id, $res[1], as_csv: $csv);
                                         } else {
+                                            // Check to see if function has as_csv parameter, and if not, warn of incompatibility
                                             $user_func_args = ['pid' => $pid, 'encounter' => $form_encounter, 'cols' => $N, 'id' => $form_id];
                                             $user_func = new ReflectionFunction($res[1] . "_report");
                                             foreach ($user_func->getParameters() as $user_func_param) {
@@ -1077,7 +1145,7 @@ if ($PDF_OUTPUT) { ?>
                             if (!$csv) {
                                 print "</div>";
                             } else {
-                                echo csvEscape("<END " . $dateres["date"] . " " . getProviderName(getProviderIdOfEncounter($form_encounter)) . "," . $encounter_title . ">") . "\n";
+                                echo csvEscape("<END Encounter " . $dateres["date"] . " " . getProviderName(getProviderIdOfEncounter($form_encounter)) . "," . $encounter_title . ">") . "\n";
                             }
                         } // end auth-check for encounter forms
                     } // end if('issue_')... else...
