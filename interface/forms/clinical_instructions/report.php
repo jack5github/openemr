@@ -15,11 +15,16 @@
 require_once(dirname(__FILE__) . '/../../globals.php');
 require_once($GLOBALS["srcdir"] . "/api.inc.php");
 
-function clinical_instructions_report($pid, $encounter, $cols, $id)
+function clinical_instructions_report($pid, $encounter, $cols, $id, $as_csv = false)
 {
     $count = 0;
     $data = formFetch("form_clinical_instructions", $id);
+    if ($as_csv) {
+        // CSV headers:
+        echo csvEscape(xlt('Instructions')) . "\n";
+    }
     if ($data) {
+        if (!$as_csv) {
         ?>
         <table style='border-collapse:collapse;border-spacing:0;width: 100%;'>
             <tr>
@@ -30,6 +35,9 @@ function clinical_instructions_report($pid, $encounter, $cols, $id)
             </tr>
         </table>
         <?php
+        } else {
+            echo csvEscape($data['instruction']) . "\n";
+        }
     }
 }
 ?>

@@ -23,7 +23,7 @@ use OpenEMR\Services\ClinicalNotesService;
 require_once(__DIR__ . "/../../globals.php");
 require_once($GLOBALS["srcdir"] . "/api.inc.php");
 
-function clinical_notes_report($pid, $encounter, $cols, $id)
+function clinical_notes_report($pid, $encounter, $cols, $id, $as_csv = false)
 {
     $count = 0;
     $clinicalNotesService = new ClinicalNotesService();
@@ -32,11 +32,31 @@ function clinical_notes_report($pid, $encounter, $cols, $id)
         return $val['activity'] == ClinicalNotesService::ACTIVITY_ACTIVE;
     });
 
-    $viewArgs = [
-        'notes' => $data
-    ];
+    
 
-    $twig = new TwigContainer(__DIR__, $GLOBALS['kernel']);
-    $t = $twig->getTwig();
-    echo $t->render('templates/report.html.twig', $viewArgs);
+    if (!$as_csv) {
+        $viewArgs = [
+            'notes' => $data
+        ];
+
+        $twig = new TwigContainer(__DIR__, $GLOBALS['kernel']);
+        $t = $twig->getTwig();
+        echo $t->render('templates/report.html.twig', $viewArgs);
+    } else {
+        // CSV headers:
+        echo csvEscape(xlt("Date")) . ",";
+        echo csvEscape(xlt("Type")) . ",";
+        echo csvEscape(xlt("Category")) . ",";
+        echo csvEscape(xlt("Author")) . ",";
+        echo csvEscape(xlt("Code")) . ",";
+        echo csvEscape("Narrative") . "\n";
+        foreach ($data as $notes) {
+            echo csvEscape($notes['date']) . ",";
+            echo csvEscape($notes['codetext'] ? $notes['codetext'] : xlt("Unspecified")) . ",";
+            echo csvEscape($notes['category_title'] ? $notes['category_title'] : xlt("Unspecified")) . ",";
+            echo csvEscape($notes['user']) . ",";
+            echo csvEscape($notes['code']) . ",";
+            echo csvEscape($notes['description']) . "\n";
+        }
+    }
 }
