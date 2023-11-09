@@ -18,21 +18,41 @@ use OpenEMR\Billing\MiscBillingOptions;
 require_once(dirname(__FILE__) . '/../../globals.php');
 require_once($GLOBALS["srcdir"] . "/api.inc.php");
 
-function misc_billing_options_report($pid, $encounter, $cols, $id)
+function misc_billing_options_report($pid, $encounter, $cols, $id, $as_csv = false)
 {
     $MBO = new OpenEMR\Billing\MiscBillingOptions();
     $count = 0;
     $data = formFetch("form_misc_billing_options", $id);
     if ($data) {
-        print "<table><tr>";
+        if (!$as_csv) {
+            print "<table><tr>";
+        } else {
+            // CSV headers:
+            $csv_columns = "";
+            foreach ($data as $key => $value) {
+                if ($key == "id" || $key == "pid" || $key == "user" || $key == "groupname" || $key == "authorized" || $key == "activity") {
+                    continue;
+                }
+                if ($csv_columns != "") {
+                    $csv_columns .= ",";
+                }
+                $csv_columns .= csvEscape(ucwords(str_replace("_", " ", $key)));
+            }
+            echo $csv_columns . "\n";
+        }
+        $csv_fields = "";
         foreach ($data as $key => $value) {
-            if (
-                $key == "id" || $key == "pid" || $key == "user" || $key == "groupname" ||
-                $key == "authorized" || $key == "activity" || $key == "date" || $value == "" ||
-                $value == "0" || $value == "0000-00-00 00:00:00" || $value == "0000-00-00" ||
-                ($key == "box_14_date_qual" && ($data['onset_date'] == 0)) ||
-                ($key == "box_15_date_qual" && ($data['date_initial_treatment'] == 0))
-            ) {
+            if (!$as_csv) {
+                if (
+                    $key == "id" || $key == "pid" || $key == "user" || $key == "groupname" ||
+                    $key == "authorized" || $key == "activity" || $key == "date" || $value == "" ||
+                    $value == "0" || $value == "0000-00-00 00:00:00" || $value == "0000-00-00" ||
+                    ($key == "box_14_date_qual" && ($data['onset_date'] == 0)) ||
+                    ($key == "box_15_date_qual" && ($data['date_initial_treatment'] == 0))
+                ) {
+                    continue;
+                }
+            } else if ($key == "id" || $key == "pid" || $key == "user" || $key == "groupname" || $key == "authorized" || $key == "activity") {
                 continue;
             }
 
@@ -62,7 +82,9 @@ function misc_billing_options_report($pid, $encounter, $cols, $id)
             if ($key === 'provider_id') {
                 $trow = sqlQuery("SELECT id, lname, fname FROM users WHERE " .
                          "id = ? ", array($value));
-                $value = $trow['fname'] . ' ' . $trow['lname'];
+                if (isset($trow['fname']) && isset($trow['lname'])) {
+                    $value = $trow['fname'] . ' ' . $trow['lname'];
+                }
                 $key = 'Box 17 Provider';
             }
 
@@ -75,17 +97,34 @@ function misc_billing_options_report($pid, $encounter, $cols, $id)
                 $value = "Yes";
             }
 
+            if (!$as_csv) {
+                $key = ucwords(str_replace("_", " ", $key));
+                print "<td><span class=bold>" . xlt($key) . ": </span><span class=text>" . text($value) . "</span></td>";
+                $count++;
 
-            $key = ucwords(str_replace("_", " ", $key));
-            print "<td><span class=bold>" . xlt($key) . ": </span><span class=text>" . text($value) . "</span></td>";
-            $count++;
-
-            if ($count == $cols) {
-                $count = 0;
-                print "</tr><tr>\n";
+                if ($count == $cols) {
+                    $count = 0;
+                    print "</tr><tr>\n";
+                }
+            } else {
+                if ($csv_fields != "") {
+                    $csv_fields .= ",";
+                }
+                if ($value == "Yes") {
+                    $value = xlt("YES");
+                } else if ($value == "No") {
+                    $value = xlt("NO");
+                } else if ($value == 0) {
+                    $value = "";
+                }
+                $csv_fields .= csvEscape($value);
             }
         }
-    }
 
-    print "</tr></table>";
+        if (!$as_csv) {
+            print "</tr></table>";
+        } else {
+            echo $csv_fields . "\n";
+        }
+    }
 }
