@@ -16,7 +16,7 @@
 require_once(__DIR__ . "/../../globals.php");
 require_once($GLOBALS["srcdir"] . "/api.inc.php");
 
-function observation_report($pid, $encounter, $cols, $id)
+function observation_report($pid, $encounter, $cols, $id, $as_csv = false)
 {
     $count = 0;
     $sql = "SELECT * FROM `form_observation` WHERE id=? AND pid = ? AND encounter = ?";
@@ -29,16 +29,27 @@ function observation_report($pid, $encounter, $cols, $id)
     }
 
     if (!empty($data)) {
-        print "<table style='border-collapse:collapse;border-spacing:0;width: 100%;'>
-            <tr>
-                <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Code') . "</span></td>
-                <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Description') . "</span></td>
-                <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Code Type') . "</span></td>
-                <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Table Code') . "</span></td>
-                <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Value') . "</span></td>
-                <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Unit') . "</span></td>
-                <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Date') . "</span></td>
-            </tr>";
+        if (!$as_csv) {
+            print "<table style='border-collapse:collapse;border-spacing:0;width: 100%;'>
+                <tr>
+                    <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Code') . "</span></td>
+                    <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Description') . "</span></td>
+                    <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Code Type') . "</span></td>
+                    <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Table Code') . "</span></td>
+                    <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Value') . "</span></td>
+                    <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Unit') . "</span></td>
+                    <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold>" . xlt('Date') . "</span></td>
+                </tr>";
+        } else {
+            // CSV headers:
+            echo csvEscape(xlt('Code')) . ",";
+            echo csvEscape(xlt('Description')) . ",";
+            echo csvEscape(xlt('Code Type')) . ",";
+            echo csvEscape(xlt('Table Code')) . ",";
+            echo csvEscape(xlt('Value')) . ",";
+            echo csvEscape(xlt('Unit')) . ",";
+            echo csvEscape(xlt('Date')) . "\n";
+        }
         foreach ($data as $key => $value) {
             if ($value['code'] == 'SS003') {
                 if ($value['ob_value'] == '261QE0002X') {
@@ -66,7 +77,8 @@ function observation_report($pid, $encounter, $cols, $id)
                 }
             }
 
-            print "<tr>
+            if (!$as_csv) {
+                print "<tr>
                         <td style='border:1px solid #ccc;padding:4px;'><span class=text>" . text($value['code']) . "</span></td>
                         <td style='border:1px solid #ccc;padding:4px;'><span class=text>" . text($value['description']) . "</span></td>
                         <td style='border:1px solid #ccc;padding:4px;'><span class=text>" . text($value['code_type']) . "</span></td>
@@ -75,9 +87,20 @@ function observation_report($pid, $encounter, $cols, $id)
                         <td style='border:1px solid #ccc;padding:4px;'><span class=text>" . text($value['ob_unit']) . "</span></td>
                         <td style='border:1px solid #ccc;padding:4px;'><span class=text>" . text($value['date']) . "</span></td>
                     </tr>";
+            } else {
+                echo csvEscape($value['code']) . ",";
+                echo csvEscape($value['description']) . ",";
+                echo csvEscape($value['code_type']) . ",";
+                echo csvEscape($value['table_code']) . ",";
+                echo csvEscape($value['ob_value']) . ",";
+                echo csvEscape($value['ob_unit']) . ",";
+                echo csvEscape($value['date']);
+            }
             print "\n";
         }
 
-        print "</table>";
+        if (!$as_csv) {
+            print "</table>";
+        }
     }
 }
