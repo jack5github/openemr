@@ -1005,18 +1005,19 @@ if ($PDF_OUTPUT) { ?>
                             if (!$csv) {
                                 echo "<div class='" . $encounter_classes . "'>\n";
                                 echo "<h4>" . $encounter_title . "</h4>";
+
+                                // show the encounter's date
+                                echo "(" . text(oeFormatSDFT(strtotime($dateres["date"]))) . ") ";
+                                if ($res[1] == 'newpatient') {
+                                    // display the provider info
+                                    echo ' ' . xlt('Provider') . ': ' . text(getProviderName(getProviderIdOfEncounter($form_encounter)));
+                                }
+
+                                echo "<br />\n";
                             } else {
-                                echo csvEscape("<BEGIN Encounter " . $encounter_title . ">") . "\n";
+                                echo csvEscape("<BEGIN " . $dateres["date"] . " " . getProviderName(getProviderIdOfEncounter($form_encounter)) . "," . $encounter_title . ">") . "\n";
                             }
 
-                            // show the encounter's date
-                            echo "(" . text(oeFormatSDFT(strtotime($dateres["date"]))) . ") ";
-                            if ($res[1] == 'newpatient') {
-                                // display the provider info
-                                echo ' ' . xlt('Provider') . ': ' . text(getProviderName(getProviderIdOfEncounter($form_encounter)));
-                            }
-
-                            echo "<br />\n";
 
                             // call the report function for the form
                             ?>
@@ -1070,7 +1071,7 @@ if ($PDF_OUTPUT) { ?>
                             if (!$csv) {
                                 print "</div>";
                             } else {
-                                echo csvEscape("<END Encounter " . $encounter_title . ">") . "\n";
+                                echo csvEscape("<END " . $dateres["date"] . " " . getProviderName(getProviderIdOfEncounter($form_encounter)) . "," . $encounter_title . ">") . "\n";
                             }
                         } // end auth-check for encounter forms
                     } // end if('issue_')... else...

@@ -203,7 +203,7 @@ function printListData($pid, $list_type, $list_activity = "%")
     }
 }
 
-function printPatientNotes($pid, $as_csv = FALSE)
+function printPatientNotes($pid, $as_csv = false)
 {
   // exclude ALL deleted notes
     $res = sqlStatement("select * from pnotes where pid = ? and deleted != 1 and activity = 1 order by date", array($pid));
@@ -238,7 +238,7 @@ function lbt_current_value($frow, $formid)
 
 // Display a particular transaction.
 //
-function lbt_report($id, $formname, $as_csv = FALSE)
+function lbt_report($id, $formname, $as_csv = false)
 {
     $arr = array();
     $fres = sqlStatement("SELECT * FROM layout_options " .
@@ -266,7 +266,7 @@ function lbt_report($id, $formname, $as_csv = FALSE)
 
 // Display all transactions for the specified patient.
 //
-function printPatientTransactions($pid, $as_csv = FALSE)
+function printPatientTransactions($pid, $as_csv = false)
 {
     $res = sqlStatement("SELECT * FROM transactions WHERE pid = ? ORDER BY date", array($pid));
     while ($row = sqlFetchArray($res)) {

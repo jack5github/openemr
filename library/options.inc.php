@@ -2458,7 +2458,7 @@ function generate_list_map($list_id, $translate = false)
     return $map;
 }
 
-function generate_display_field($frow, $currvalue, $as_csv = FALSE)
+function generate_display_field($frow, $currvalue, $as_csv = false)
 {
     global $ISSUE_TYPES, $facilityService;
 
@@ -3373,7 +3373,7 @@ $last_group = '';
 $cell_count = 0;
 $item_count = 0;
 
-function disp_end_cell($as_csv = FALSE)
+function disp_end_cell($as_csv = false)
 {
     global $item_count, $cell_count;
     if ($item_count > 0) {
@@ -3384,7 +3384,7 @@ function disp_end_cell($as_csv = FALSE)
     }
 }
 
-function disp_end_row($as_csv = FALSE)
+function disp_end_row($as_csv = false)
 {
     global $cell_count, $CPR;
     disp_end_cell(as_csv: $as_csv);
@@ -3400,7 +3400,7 @@ function disp_end_row($as_csv = FALSE)
     }
 }
 
-function disp_end_group($as_csv = FALSE)
+function disp_end_group($as_csv = false)
 {
     global $last_group;
     if (strlen($last_group) > 0) {
@@ -3642,7 +3642,7 @@ function getLayoutProperties($formtype, &$grparr, $sel = "grp_title", $limit = n
     }
 }
 
-function display_layout_rows($formtype, $result1, $result2 = '', $as_csv = FALSE)
+function display_layout_rows($formtype, $result1, $result2 = '', $as_csv = false)
 {
     global $item_count, $cell_count, $last_group, $CPR;
     $csv_columns = []; $csv_fields = []; $csv_last_column = '';
