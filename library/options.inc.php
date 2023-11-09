@@ -2494,8 +2494,12 @@ function generate_display_field($frow, $currvalue, $as_csv = FALSE)
 
         // If match is not found in main and backup lists, return the key with exclamation mark
         if ($s == '') {
-            $s = nl2br(text(xl_list_label($currvalue))) .
-                '<span> <i class="fa fas fa-exclamation-circle ml-1"></i></span>';
+            if (!$as_csv) {
+                $s = nl2br(text(xl_list_label($currvalue))) .
+                    '<span> <i class="fa fas fa-exclamation-circle ml-1"></i></span>';
+            } else {
+                $s = xl_list_label($currvalue);
+            }
         }
 
         if ($data_type == 46) {
@@ -3781,7 +3785,11 @@ function display_layout_rows($formtype, $result1, $result2 = '', $as_csv = FALSE
                 } else {
                     // CSV headers:
                     if ($frow['title']) {
-                        $csv_last_column = csvEscape($group_name . " " . xl_layout_label($frow['title']));
+                        if ($group_name) {
+                            $csv_last_column = csvEscape($group_name . " " . xl_layout_label($frow['title']));
+                        } else {
+                            $csv_last_column = csvEscape(xl_layout_label($frow['title']));
+                        }
                     }
                     array_push($csv_columns, $csv_last_column);
                 }

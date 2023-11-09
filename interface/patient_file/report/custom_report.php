@@ -644,12 +644,20 @@ if ($PDF_OUTPUT) { ?>
                             print "<h4>" . xlt('Patient Communication sent') . ":</h4>";
                         } else {
                             echo csvEscape("<BEGIN " . xlt('Patient Communication sent') . ">") . "\n";
+                            // CSV headers:
+                            echo csvEscape("Type/Subject/Date") . ",";
+                            echo csvEscape("By") . ",";
+                            echo csvEscape("Text") . "\n";
                         }
                         $sql = "SELECT concat( 'Messsage Type: ', batchcom.msg_type, ', Message Subject: ', batchcom.msg_subject, ', Sent on:', batchcom.msg_date_sent ) AS batchcom_data, batchcom.msg_text, concat( users.fname, users.lname ) AS user_name FROM `batchcom` JOIN `users` ON users.id = batchcom.sent_by WHERE batchcom.patient_id=?";
                         // echo $sql;
                         $result = sqlStatement($sql, array($pid));
                         while ($row = sqlFetchArray($result)) {
-                            echo text($row['batchcom_data']) . ", By: " . text($row['user_name']) . "<br />Text:<br /> " . text($row['msg_txt']) . "<br />\n";
+                            if (!$as_csv) {
+                                echo text($row['batchcom_data']) . ", By: " . text($row['user_name']) . "<br />Text:<br /> " . text($row['msg_txt']) . "<br />\n";
+                            } else {
+                                echo csvEscape($row['batchcom_data']) . "," . csvEscape($row['user_name']) . "," . csvEscape($row['msg_txt']) . "\n";
+                            }
                         }
 
                         if (!$csv) {
@@ -677,9 +685,6 @@ if ($PDF_OUTPUT) { ?>
                             echo csvEscape("<END " . xlt('Patient Notes') . ">") . "\n";
                         }
                     } elseif ($val == "transactions") {
-                        /**
-                         * CSV export incomplete
-                         */ 
                         if (!$csv) {
                             echo "<hr />";
                             echo "<div class='text transactions'>\n";
@@ -687,7 +692,7 @@ if ($PDF_OUTPUT) { ?>
                         } else {
                             echo csvEscape("<BEGIN " . xlt('Patient Transactions') . ">") . "\n";
                         }
-                        printPatientTransactions($pid);
+                        printPatientTransactions($pid, as_csv: $csv);
                         if (!$csv) {
                             echo "</div>";
                         } else {

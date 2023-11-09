@@ -238,7 +238,7 @@ function lbt_current_value($frow, $formid)
 
 // Display a particular transaction.
 //
-function lbt_report($id, $formname)
+function lbt_report($id, $formname, $as_csv = FALSE)
 {
     $arr = array();
     $fres = sqlStatement("SELECT * FROM layout_options " .
@@ -255,24 +255,34 @@ function lbt_report($id, $formname)
         $arr[$field_id] = wordwrap($currvalue, 30, "\n", true);
     }
 
-    echo "<table>\n";
-    display_layout_rows($formname, $arr);
-    echo "</table>\n";
+    if (!$as_csv) {
+        echo "<table>\n";
+    }
+    display_layout_rows($formname, $arr, as_csv: $as_csv);
+    if (!$as_csv) {
+        echo "</table>\n";
+    }
 }
 
 // Display all transactions for the specified patient.
 //
-function printPatientTransactions($pid)
+function printPatientTransactions($pid, $as_csv = FALSE)
 {
     $res = sqlStatement("SELECT * FROM transactions WHERE pid = ? ORDER BY date", array($pid));
     while ($row = sqlFetchArray($res)) {
-        echo "<p><span class='bold'>" .
-        text(oeFormatSDFT(strtotime($row['date']))) .
-        " (" .
-        generate_display_field(array('data_type' => '1','list_id' => 'transactions'), $row['title']) .
-        ")</span><br />\n";
-        lbt_report($row['id'], $row['title']);
-        echo "</p>\n";
+        if (!$as_csv) {
+            echo "<p><span class='bold'>" .
+            text(oeFormatSDFT(strtotime($row['date']))) .
+            " (" .
+            generate_display_field(array('data_type' => '1','list_id' => 'transactions'), $row['title']) .
+            ")</span><br />\n";
+            lbt_report($row['id'], $row['title']);
+            echo "</p>\n";
+        } else {
+            echo csvEscape("<BEGIN " . $row['date'] . " " . generate_display_field(array('data_type' => '1','list_id' => 'transactions'), $row['title'], as_csv: $as_csv) . ">") . "\n";
+            echo lbt_report($row['id'], $row['title'], as_csv: $as_csv) . "\n";
+            echo csvEscape("<END " . $row['date'] . " " . generate_display_field(array('data_type' => '1','list_id' => 'transactions'), $row['title'], as_csv: $as_csv) . ">") . "\n";
+        }
     }
 }
 
