@@ -888,7 +888,7 @@ if ($PDF_OUTPUT) { ?>
                                     } else {
                                         echo csvEscape("<BEGIN " . xlt('Procedure Order') . " " . $poid . ">") . "\n";
                                     }
-                                    generate_order_report($poid, false, !$PDF_OUTPUT);
+                                    generate_order_report($poid, false, genstyles: !$csv ? !$PDF_OUTPUT : false, as_csv: $csv);
                                     if (!$csv) {
                                         echo "<br />\n";
                                     } else {

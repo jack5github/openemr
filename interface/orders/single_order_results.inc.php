@@ -68,7 +68,7 @@ function storeNote($s)
 }
 
 // Display a single row of output including order, report and result information.
-function generate_result_row(&$ctx, &$row, &$rrow, $priors_omitted = false)
+function generate_result_row(&$ctx, &$row, &$rrow, $priors_omitted = false, $as_csv = false)
 {
     $lab_id = empty($row['lab_id']) ? 0 : ($row['lab_id'] + 0);
     $order_type_id = empty($row['order_type_id']) ? 0 : ($row['order_type_id'] + 0);
@@ -176,7 +176,9 @@ function generate_result_row(&$ctx, &$row, &$rrow, $priors_omitted = false)
         ++$ctx['encount'];
     }
 
-    echo " <tr class='detail'>\n";
+    if (!$as_csv) {
+        echo " <tr class='detail'>\n";
+    }
 
     if ($ctx['lastpcid'] != $order_seq) {
         $ctx['lastprid'] = -1; // force report fields on first line of each procedure
@@ -195,62 +197,85 @@ function generate_result_row(&$ctx, &$row, &$rrow, $priors_omitted = false)
             }
         }
 
-        echo "  <td>$tmp</td>\n";
+        if (!$as_csv) {
+            echo "  <td>$tmp</td>\n";
+        } else {
+            echo csvEscape($tmp);
+        }
     } else {
         echo "  <td>&nbsp;</td>";
     }
 
+    if ($as_csv) {
+        echo ",";
+    }
+
     // If this starts a new report or a new order, generate the report fields.
     if ($report_id != $ctx['lastprid']) {
-        echo "  <td>";
-        echo myCellText(oeFormatShortDate(substr($date_report, 0, 10)) . substr($date_report, 10) . $date_report_suf);
-        echo "</td>\n";
+        if (!$as_csv) {
+            echo "  <td>";
+            echo myCellText(oeFormatShortDate(substr($date_report, 0, 10)) . substr($date_report, 10) . $date_report_suf);
+            echo "</td>\n";
 
-        echo "  <td>";
-        echo myCellText(oeFormatShortDate(substr($date_collected, 0, 10)) . substr($date_collected, 10) . $date_collected_suf);
-        echo "</td>\n";
+            echo "  <td>";
+            echo myCellText(oeFormatShortDate(substr($date_collected, 0, 10)) . substr($date_collected, 10) . $date_collected_suf);
+            echo "</td>\n";
 
-        echo "  <td>";
-        echo !empty($specimen_num) ? myCellText($specimen_num) : myCellText($date_collected); //quest wanted the specimen date to show here
-        echo "</td>\n";
+            echo "  <td>";
+            echo !empty($specimen_num) ? myCellText($specimen_num) : myCellText($date_collected); //quest wanted the specimen date to show here
+            echo "</td>\n";
 
-        echo "  <td title='" . xla('Check mark indicates reviewed') . "'>";
-        echo myCellText(getListItem('proc_rep_status', $report_status));
-        if ($row['review_status'] == 'reviewed') {
-            echo " &#x2713;"; // unicode check mark character
+            echo "  <td title='" . xla('Check mark indicates reviewed') . "'>";
+            echo myCellText(getListItem('proc_rep_status', $report_status));
+            if ($row['review_status'] == 'reviewed') {
+                echo " &#x2713;"; // unicode check mark character
+            }
+
+            echo "</td>\n";
+
+            echo "  <td class='text-center'>";
+            echo myCellText($report_noteid);
+            echo "</td>\n";
+        } else {
+            echo csvEscape(oeFormatShortDate(substr($date_report, 0, 10)) . substr($date_report, 10) . $date_report_suf) . ",";
+            echo csvEscape(oeFormatShortDate(substr($date_collected, 0, 10)) . substr($date_collected, 10) . $date_collected_suf) . ",";
+            echo csvEscape(!empty($specimen_num) ? $specimen_num : $date_collected) . ",";
+            echo csvEscape(getListItem('proc_rep_status', $report_status)) . ",";
+            echo csvEscape($row['review_status'] == 'reviewed' ? xlt('YES') : xlt('NO')) . ",";
+            echo csvEscape($report_noteid) . ",";
         }
-
-        echo "</td>\n";
-
-        echo "  <td class='text-center'>";
-        echo myCellText($report_noteid);
-        echo "</td>\n";
-    } else {
+    } else if (!$as_csv) {
         echo "  <td colspan='5'>&nbsp;</td>\n";
+    } else {
+        echo '"","","","","",';
     }
 
     if ($result_code !== '' || $result_document_id) {
         $tmp = myCellText($result_code);
-        if (empty($GLOBALS['PATIENT_REPORT_ACTIVE']) && !empty($result_code)) {
-            $tmp = "<a href='javascript:educlick(\"LOINC\"," . attr_js($result_code) .
-            ")'>$tmp</a>";
-        }
+        if (!$as_csv) {
+            if (empty($GLOBALS['PATIENT_REPORT_ACTIVE']) && !empty($result_code)) {
+                $tmp = "<a href='javascript:educlick(\"LOINC\"," . attr_js($result_code) .
+                ")'>$tmp</a>";
+            }
 
-        echo "  <td>$tmp</td>\n";
-        echo "  <td>";
-        echo myCellText($result_text);
-        echo "</td>\n";
-        echo "  <td>";
-        $tmp = myCellText(getListItem('proc_res_abnormal', $result_abnormal));
-        if ($result_abnormal && strtolower($result_abnormal) != 'no') {
-            echo "<p class='font-weight-bold text-danger'>$tmp</p>";
+            echo "  <td>$tmp</td>\n";
+            echo "  <td>";
+            echo myCellText($result_text);
+            echo "</td>\n";
+            echo "  <td>";
+            $tmp = myCellText(getListItem('proc_res_abnormal', $result_abnormal));
+            if ($result_abnormal && strtolower($result_abnormal) != 'no') {
+                echo "<p class='font-weight-bold text-danger'>$tmp</p>";
+            } else {
+                echo $tmp;
+            }
+
+            echo "</td>\n";
         } else {
-            echo $tmp;
+            echo csvEscape($result_code) . "," . csvEscape($result_text) . "," . csvEscape(getListItem('proc_res_abnormal', $result_abnormal)) . ",";
         }
 
-        echo "</td>\n";
-
-        if ($result_document_id) {
+        if ($result_document_id && !$as_csv) {
             $d = new Document($result_document_id);
             echo "  <td colspan='3'>";
             if (empty($GLOBALS['PATIENT_REPORT_ACTIVE'])) {
@@ -285,7 +310,7 @@ function generate_result_row(&$ctx, &$row, &$rrow, $priors_omitted = false)
                     $result_noteid .= 1 + storeNote($narrative_note_list);
                 }
             }
-        } else {
+        } else if (!$as_csv) {
             echo "  <td>";
             echo myCellText($result_result);
             echo "</td>\n";
@@ -297,23 +322,31 @@ function generate_result_row(&$ctx, &$row, &$rrow, $priors_omitted = false)
             // but in that case the call will return the same value.
             echo myCellText(getListItemTitle('proc_unit', $result_units));
             echo "</td>\n";
+        } else {
+            echo csvEscape($result_result) . "," . csvEscape($result_range) . "," . csvEscape(getListItemTitle('proc_unit', $result_units)) . ",";
         }
 
-        echo "  <td align='center'>";
-        echo myCellText($result_noteid);
-        echo "</td>\n";
-    } else {
+        if (!$as_csv) {
+            echo "  <td align='center'>";
+            echo myCellText($result_noteid);
+            echo "</td>\n";
+        } else {
+            echo csvEscape($result_noteid) . "\n";
+        }
+    } else if (!$as_csv) {
         echo "  <td colspan='7'>&nbsp;</td>\n";
-    }
 
-    echo " </tr>\n";
+        echo " </tr>\n";
+    } else {
+        echo '"","","","","","",""' . "\n";
+    }
 
     $ctx['lastpcid'] = $order_seq;
     $ctx['lastprid'] = $report_id;
     ++$ctx['lino'];
 }
 
-function generate_order_report($orderid, $input_form = false, $genstyles = true, $finals_only = false)
+function generate_order_report($orderid, $input_form = false, $genstyles = true, $finals_only = false, $as_csv = false)
 {
     global $aNotes;
 
@@ -363,9 +396,7 @@ function generate_order_report($orderid, $input_form = false, $genstyles = true,
     $patient_id = $orow['patient_id'];
     $language = $orow['language'];
 
-    ?>
-
-    <?php if ($genstyles) { ?>
+    if ($genstyles) { ?>
 <style>
 
         <?php if (empty($_SESSION['language_direction']) || $_SESSION['language_direction'] == 'ltr') { ?>
@@ -427,293 +458,366 @@ function generate_order_report($orderid, $input_form = false, $genstyles = true,
         }
     }
 </style>
-<?php } ?>
+<?php }
 
-    <?php if ($input_form) { ?>
-        <script src="<?php echo $GLOBALS['webroot']; ?>/library/textformat.js"></script>
-    <?php } // end if input form
+    if (!$as_csv) {
+
+        if ($input_form) { ?>
+            <script src="<?php echo $GLOBALS['webroot']; ?>/library/textformat.js"></script>
+        <?php } // end if input form
     ?>
 
-    <?php if (empty($GLOBALS['PATIENT_REPORT_ACTIVE'])) { ?>
-<script>
-    var mypcc = '<?php echo $GLOBALS['phone_country_code'] ?>';
-    if (typeof top.webroot_url === "undefined") {
-        if (typeof opener.top.webroot_url !== "undefined") {
-            top.webroot_url = opener.top.webroot_url;
+        <?php if (empty($GLOBALS['PATIENT_REPORT_ACTIVE'])) { ?>
+    <script>
+        var mypcc = '<?php echo $GLOBALS['phone_country_code'] ?>';
+        if (typeof top.webroot_url === "undefined") {
+            if (typeof opener.top.webroot_url !== "undefined") {
+                top.webroot_url = opener.top.webroot_url;
+            }
+        }
+
+        // This works even if we are in a separate window.
+        function showpnotes(orderid) {
+            let url = top.webroot_url + '/interface/patient_file/summary/pnotes_full.php?orderid=' + <?php echo js_url($orderid); ?>;
+            dlgopen(url, 'notes', 950, 750, false, '');
+            return false;
+        }
+
+        // Process click on LOINC code for patient education popup.
+        function educlick(codetype, codevalue) {
+            dlgopen(top.webroot_url + '/interface/patient_file/education.php' +
+                '?type=' + encodeURIComponent(codetype) +
+                '&code=' + encodeURIComponent(codevalue) +
+                '&language=' + <?php echo js_url($language); ?>,
+                '_blank', 1024, 750, true); // Force a new window instead of iframe to address cross site scripting potential
+        }
+    </script>
+
+    <?php } // end if not patient report ?>
+        <?php if ($input_form) { ?>
+    <form method='post' action='single_order_results.php?orderid=<?php echo attr_url($orderid); ?>'>
+        <?php } // end if input form
+        ?>
+
+        <div class='labres table-responsive'>
+            <table class="table table-sm">
+                <tr>
+                    <td class="font-weight-bold text-nowrap" width='5%'><?php echo xlt('Patient ID'); ?></td>
+                    <td width='45%'><?php echo myCellText($orow['pubpid']); ?></td>
+                    <td class="font-weight-bold text-nowrap" width='5%'><?php echo xlt('Order ID'); ?></td>
+                    <td width='45%'>
+                        <?php
+                        if (empty($GLOBALS['PATIENT_REPORT_ACTIVE'])) {
+                            echo "   <a href='" . $GLOBALS['webroot'];
+                            echo "/interface/orders/order_manifest.php?orderid=";
+                            echo attr_url($orow['procedure_order_id']);
+                            echo "' target='_blank' onclick='top.restoreSession()'>";
+                        }
+
+                        echo myCellText($orow['procedure_order_id']);
+                        if (empty($GLOBALS['PATIENT_REPORT_ACTIVE'])) {
+                            echo "</a>\n";
+                        }
+
+                        if ($orow['control_id']) {
+                            echo myCellText(' ' . xl('Lab') . ': ' . $orow['control_id']);
+                        }
+                        ?>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="font-weight-bold text-nowrap"><?php echo xlt('Patient Name'); ?></td>
+                    <td><?php echo myCellText($orow['lname'] . ', ' . $orow['fname'] . ' ' . $orow['mname']); ?></td>
+                    <td class="font-weight-bold text-nowrap"><?php echo xlt('Ordered By'); ?></td>
+                    <td><?php echo myCellText($orow['ulname'] . ', ' . $orow['ufname'] . ' ' . $orow['umname']); ?></td>
+                </tr>
+                <tr>
+                    <td class="font-weight-bold text-nowrap"><?php echo xlt('Order Date'); ?></td>
+                    <td><?php echo myCellText(oeFormatShortDate($orow['date_ordered'])); ?></td>
+                    <td class="font-weight-bold text-nowrap"><?php echo xlt('Print Date'); ?></td>
+                    <td><?php echo text(oeFormatShortDate(date('Y-m-d'))); ?></td>
+                </tr>
+                <tr>
+                    <td class="font-weight-bold text-nowrap"><?php echo xlt('Order Status'); ?></td>
+                    <td><?php echo $orow['order_status'] ? myCellText($orow['order_status']) : xlt('Pending'); ?></td>
+                    <td class="font-weight-bold text-nowrap"><?php echo xlt('Encounter Date'); ?></td>
+                    <td><?php echo myCellText(oeFormatShortDate(substr($orow['date'], 0, 10))); ?></td>
+                </tr>
+                <tr>
+                    <td class="font-weight-bold text-nowrap"><?php echo xlt('Lab'); ?></td>
+                    <td><?php echo myCellText($orow['labname']); ?></td>
+                    <td class="font-weight-bold text-nowrap"><?php echo xlt('Receiving Fac.'); ?></td>
+                    <td><?php echo myCellText($orow['rcvfacid']); ?></td>
+                    <!-- replaced specimen with receiving facility -->
+                </tr>
+            </table>
+            <br/>
+            <table class="table table-sm">
+                <tr class='head'>
+                    <td class="align-middle" style="font-size: 1rem;" width='20%'><?php echo xlt('Diagnosis'); ?></td>
+                    <td class="align-middle" style="font-size: 1rem;"><?php echo xlt('Diagnosis Description'); ?></td>
+                </tr>
+                <?php
+                foreach ($codes as $code) {
+                    echo "<tr><td>" . myCellText($code['code']) . "</td>";
+                    echo "<td>" . myCellText($code['short_desc']) . "</td></tr>";
+                }
+                ?>
+            </table>
+            <br/>
+            <table class="table table-sm table-striped">
+                <tr class='head'>
+                    <td class="font-weight-bold align-middle" rowspan='2'><?php echo xlt('Ordered Procedure'); ?></td>
+                    <td class="font-weight-bold" colspan='5'><?php echo xlt('Report'); ?></td>
+                    <td class="font-weight-bold" colspan='7'><?php echo xlt('Results'); ?></td>
+                </tr>
+                <tr class='head'>
+                    <td><?php echo xlt('Reported'); ?></td>
+                    <td><?php echo xlt('Collected'); ?></td>
+                    <td><?php echo xlt('Specimen'); ?></td>
+                    <td><?php echo xlt('Status'); ?></td>
+                    <td><?php echo xlt('Note'); ?></td>
+                    <td><?php echo xlt('Code'); ?></td>
+                    <td><?php echo xlt('Name'); ?></td>
+                    <td><?php echo xlt('Abn'); ?></td>
+                    <td><?php echo xlt('Value'); ?></td>
+                    <td><?php echo xlt('Range'); ?></td>
+                    <td><?php echo xlt('Units'); ?></td>
+                    <td><?php echo xlt('Note'); ?></td>
+                </tr>
+
+    <?php } else {
+        // CSV headers:
+        echo csvEscape(xlt("Patient ID")) . ",";
+        echo csvEscape(xlt("Order ID")) . ",";
+        echo csvEscape(xlt("Patient Name") . " First") . ",";
+        echo csvEscape(xlt("Patient Name") . " Middle") . ",";
+        echo csvEscape(xlt("Patient Name") . " Last") . ",";
+        echo csvEscape(xlt("Ordered By") . " First") . ",";
+        echo csvEscape(xlt("Ordered By") . " Middle") . ",";
+        echo csvEscape(xlt("Ordered By") . " Last") . ",";
+        echo csvEscape(xlt("Order Date")) . ",";
+        echo csvEscape(xlt("Print Date")) . ",";
+        echo csvEscape(xlt("Order Status")) . ",";
+        echo csvEscape(xlt("Encounter Date")) . ",";
+        echo csvEscape(xlt("Lab")) . ",";
+        echo csvEscape(xlt("Receiving Fac.")) . "\n";
+        echo csvEscape($orow['pubpid']) . ",";
+        echo csvEscape($orow['procedure_order_id']) . ",";
+        echo csvEscape($orow['fname']) . ",";
+        echo csvEscape($orow['mname']) . ",";
+        echo csvEscape($orow['lname']) . ",";
+        echo csvEscape($orow['ufname']) . ",";
+        echo csvEscape($orow['umname']) . ",";
+        echo csvEscape($orow['ulname']) . ",";
+        echo csvEscape($orow['date_ordered']) . ",";
+        echo csvEscape(date('Y-m-d')) . ",";
+        echo csvEscape($orow['order_status'] ? $orow['order_status'] : xlt('Pending')) . ",";
+        echo csvEscape(substr($orow['date'], 0, 10)) . ",";
+        echo csvEscape($orow['labname']) . ",";
+        echo csvEscape($orow['rcvfacid']) . "\n";
+        // Diagnoses
+        echo csvEscape("<BEGIN " . xlt('Diagnosis') . ">") . "\n";
+        echo csvEscape("Diagnosis") . ",";
+        echo csvEscape("Diagnosis Description") . "\n";
+        foreach ($codes as $code) {
+            echo csvEscape($code['code']) . "," . csvEscape($code['short_desc']) . "\n";
+        }
+        echo csvEscape("<END " . xlt('Diagnosis') . ">") . "\n";
+        echo csvEscape("<BEGIN " . xlt('Ordered Procedure') . ">") . "\n";
+        // CSV headers:
+        echo csvEscape(xlt('Ordered Procedure')) . ",";
+        echo csvEscape(xlt('Report') . " " . xlt('Reported')) . ",";
+        echo csvEscape(xlt('Report') . " " . xlt('Collected')) . ",";
+        echo csvEscape(xlt('Report') . " " . xlt('Specimen')) . ",";
+        echo csvEscape(xlt('Report') . " " . xlt('Status')) . ",";
+        echo csvEscape(xlt('Report') . " " . xlt('Reviewed')) . ",";
+        echo csvEscape(xlt('Report') . " " . xlt('Note')) . ",";
+        echo csvEscape(xlt('Results') . " " . xlt('Code')) . ",";
+        echo csvEscape(xlt('Results') . " " . xlt('Name')) . ",";
+        echo csvEscape(xlt('Results') . " " . xlt('Abn')) . ",";
+        echo csvEscape(xlt('Results') . " " . xlt('Value')) . ",";
+        echo csvEscape(xlt('Results') . " " . xlt('Range')) . ",";
+        echo csvEscape(xlt('Results') . " " . xlt('Units')) . ",";
+        echo csvEscape(xlt('Results') . " " . xlt('Note')) . "\n";
+    } // end if as_csv
+
+    $query = "SELECT " .
+        "po.lab_id, po.date_ordered, pc.procedure_order_seq, pc.procedure_code, " .
+        "pc.procedure_name, pc.diagnoses, " .
+        "pr.date_report, pr.date_report_tz, pr.date_collected, pr.date_collected_tz, " .
+        "pr.procedure_report_id, pr.specimen_num, pr.report_status, pr.review_status, pr.report_notes " .
+        "FROM procedure_order AS po " .
+        "JOIN procedure_order_code AS pc ON pc.procedure_order_id = po.procedure_order_id " .
+        "LEFT JOIN procedure_report AS pr ON pr.procedure_order_id = po.procedure_order_id AND " .
+        "pr.procedure_order_seq = pc.procedure_order_seq " .
+        "WHERE po.procedure_order_id = ? " .
+        "ORDER BY pc.procedure_order_seq, pr.date_report, pr.procedure_report_id";
+
+    $res = sqlStatement($query, array($orderid));
+    $aNotes = array();
+    $finals = array();
+    $empty_results = array('result_code' => '');
+
+    // Context for this call that may be used in other functions.
+    $ctx = array(
+        'lastpcid' => -1,
+        'lastprid' => -1,
+        'encount' => 0,
+        'lino' => 0,
+        'sign_list' => '',
+        'seen_report_ids' => array(),
+    );
+
+    while ($row = sqlFetchArray($res)) {
+        $report_id = empty($row['procedure_report_id']) ? 0 : ($row['procedure_report_id'] + 0);
+
+        $query = "SELECT " .
+            "ps.result_code, ps.result_text, ps.abnormal, ps.result, ps.range, " .
+            "ps.result_status, ps.facility, ps.units, ps.comments, ps.document_id, ps.date " .
+            "FROM procedure_result AS ps " .
+            "WHERE ps.procedure_report_id = ? " .
+            "ORDER BY ps.procedure_result_id";
+
+        $rres = sqlStatement($query, array($report_id));
+
+        if ($finals_only) {
+            // We are consolidating reports.
+            if (sqlNumRows($rres)) {
+                $rrowsets = array();
+                // First pass creates a $rrowsets[$key] for each unique result code in *this* report, with
+                // the value being an array of the corresponding result rows. This caters to multiple
+                // occurrences of the same result code in the same report.
+                while ($rrow = sqlFetchArray($rres)) {
+                    $result_code = empty($rrow['result_code']) ? '' : $rrow['result_code'];
+                    $key = sprintf('%05d/', $row['procedure_order_seq']) . $result_code;
+                    if (!isset($rrowsets[$key])) {
+                        $rrowsets[$key] = array();
+                    }
+
+                    $rrowsets[$key][] = $rrow;
+                }
+
+                // Second pass builds onto the array of final results for *all* reports, where each final
+                // result for a given result code is its *array* of result rows from *one* of the reports.
+                foreach ($rrowsets as $key => $rrowset) {
+                    // When two reports have the same date, use the result date to decide which is "latest".
+                    if (
+                        isset($finals[$key]) &&
+                        $row['date_report'] == $finals[$key][0]['date_report'] &&
+                        !empty($rrow['date']) && !empty($finals[$key][1]['date']) &&
+                        $rrow['date'] < $finals[$key][1]['date']
+                    ) {
+                        $finals[$key][2] = true; // see comment below
+                        continue;
+                    }
+
+                    // $finals[$key][2] indicates if there are multiple results for this result code.
+                    $finals[$key] = array($row, $rrowset, isset($finals[$key]));
+                }
+            } else {
+                // We have no results for this report.
+                $key = sprintf('%05d/', $row['procedure_order_seq']);
+                $finals[$key] = array($row, array($empty_results), false);
+            }
+        } else {
+            // We are showing all results for all reports.
+            if (sqlNumRows($rres)) {
+                while ($rrow = sqlFetchArray($rres)) {
+                    generate_result_row($ctx, $row, $rrow, false, as_csv: $as_csv);
+                }
+            } else {
+                generate_result_row($ctx, $row, $empty_results, false, as_csv: $as_csv);
+            }
         }
     }
 
-    // This works even if we are in a separate window.
-    function showpnotes(orderid) {
-        let url = top.webroot_url + '/interface/patient_file/summary/pnotes_full.php?orderid=' + <?php echo js_url($orderid); ?>;
-        dlgopen(url, 'notes', 950, 750, false, '');
-        return false;
+    if ($finals_only) {
+        // The sort here was removed because $finals is already ordered by procedure_result_id
+        // within procedure_order_seq which is probably desirable.  Sorting by result code defeats
+        // the sequencing of results chosen by the sender.
+        // ksort($finals);
+        foreach ($finals as $final) {
+            foreach ($final[1] as $rrow) {
+                generate_result_row($ctx, $final[0], $rrow, $final[2], as_csv: $as_csv);
+            }
+        }
     }
 
-    // Process click on LOINC code for patient education popup.
-    function educlick(codetype, codevalue) {
-        dlgopen(top.webroot_url + '/interface/patient_file/education.php' +
-            '?type=' + encodeURIComponent(codetype) +
-            '&code=' + encodeURIComponent(codevalue) +
-            '&language=' + <?php echo js_url($language); ?>,
-            '_blank', 1024, 750, true); // Force a new window instead of iframe to address cross site scripting potential
+    if (!$as_csv) { ?>
+            </table>
+            <br/>
+            <table class="table table-sm border-0">
+                <tr>
+                    <td class="border-0">
+                        <?php }
+                        if ($as_csv) {
+                            echo csvEscape("<BEGIN " . xlt('Notes') . ">") . "\n";
+                            // CSV headers:
+                            echo csvEscape("Key") . "," . csvEscape("Notes") . "\n";
+                        }
+                        if (!empty($aNotes)) {
+                            if (!$as_csv) {
+                                echo "<div class='table-responsive'>";
+                                echo "<table class='table'>\n";
+                                echo " <tr style='background-color: var(--gray200);'>\n";
+                                echo "  <th class='text-center' colspan='2'>" . xlt('Notes') . "</th>\n";
+                                echo " </tr>\n";
+                            }
+                            foreach ($aNotes as $key => $value) {
+                                if (!$as_csv) {
+                                    echo " <tr>\n";
+                                    echo "  <td class='align-top' style='padding:5px 5px;'>" . ($key + 1) . "</td>\n";
+                                    // <pre> tag because white space and a fixed font are often used to line things up.
+                                    echo "  <td><pre class='border-0 bg-white' style='white-space:pre-wrap;'>" . text($value) . "</pre></td>\n";
+                                    echo " </tr>\n";
+                                } else {
+                                    echo csvEscape($key + 1) . "," . csvEscape($value) . "\n";
+                                }
+                            }
+
+                            if (!$as_csv) {
+                                echo "</table></div>\n";
+                            }
+                        }
+                    if (!$as_csv) { ?>
+                    </td>
+                    <td class="border-0 text-right align-top">
+                        <?php if ($input_form && !empty($ctx['priors_omitted']) /* empty($_POST['form_showall']) */) { ?>
+                            <input type='submit' class='btn btn-primary' name='form_showall' value='<?php echo xla('Show All Results'); ?>'
+                                title='<?php echo xla('Include all values reported for each result code'); ?>'/>
+                        <?php } elseif ($input_form && !empty($_POST['form_showall'])) { ?>
+                            <input type='submit' class='btn btn-primary' name='form_latest' value='<?php echo xla('Latest Results Only'); ?>'
+                                title='<?php echo xla('Show only latest values reported for each result code'); ?>'/>
+                        <?php } ?>
+                        <?php if (empty($GLOBALS['PATIENT_REPORT_ACTIVE'])) { ?>
+                            &nbsp;
+                            <input type='button' class='btn btn-primary' value='<?php echo xla('Related Patient Notes'); ?>'
+                                onclick='showpnotes(<?php echo attr_js($orderid); ?>)' />
+                        <?php } ?>
+                        <?php if ($input_form && $ctx['sign_list']) { ?>
+                            &nbsp;
+                            <input type='hidden' class='btn btn-primary' name='form_sign_list' value='<?php echo attr($ctx['sign_list']); ?>'/>
+                            <input type='submit' class='btn btn-primary' name='form_sign' value='<?php echo xla('Sign Results'); ?>'
+                                title='<?php echo xla('Mark these reports as reviewed'); ?>'/>
+                        <?php } ?>
+                        <?php if ($input_form) { ?>
+                            &nbsp;
+                            <input type='button' class='btn btn-danger' value='<?php echo xla('Close'); ?>' onclick='window.close()'/>
+                        <?php } ?>
+                    </td>
+                </tr>
+            </table>
+        </div>
+<?php
+    } else {
+        echo csvEscape("<END " . xlt('Notes') . ">") . "\n";
+        echo csvEscape("<END " . xlt('Ordered Procedure') . ">") . "\n";
     }
-</script>
-
-<?php } // end if not patient report ?>
-    <?php if ($input_form) { ?>
-<form method='post' action='single_order_results.php?orderid=<?php echo attr_url($orderid); ?>'>
-    <?php } // end if input form
-    ?>
-
-    <div class='labres table-responsive'>
-        <table class="table table-sm">
-            <tr>
-                <td class="font-weight-bold text-nowrap" width='5%'><?php echo xlt('Patient ID'); ?></td>
-                <td width='45%'><?php echo myCellText($orow['pubpid']); ?></td>
-                <td class="font-weight-bold text-nowrap" width='5%'><?php echo xlt('Order ID'); ?></td>
-                <td width='45%'>
-                    <?php
-                    if (empty($GLOBALS['PATIENT_REPORT_ACTIVE'])) {
-                        echo "   <a href='" . $GLOBALS['webroot'];
-                        echo "/interface/orders/order_manifest.php?orderid=";
-                        echo attr_url($orow['procedure_order_id']);
-                        echo "' target='_blank' onclick='top.restoreSession()'>";
-                    }
-
-                    echo myCellText($orow['procedure_order_id']);
-                    if (empty($GLOBALS['PATIENT_REPORT_ACTIVE'])) {
-                        echo "</a>\n";
-                    }
-
-                    if ($orow['control_id']) {
-                        echo myCellText(' ' . xl('Lab') . ': ' . $orow['control_id']);
-                    }
-                    ?>
-                </td>
-            </tr>
-            <tr>
-                <td class="font-weight-bold text-nowrap"><?php echo xlt('Patient Name'); ?></td>
-                <td><?php echo myCellText($orow['lname'] . ', ' . $orow['fname'] . ' ' . $orow['mname']); ?></td>
-                <td class="font-weight-bold text-nowrap"><?php echo xlt('Ordered By'); ?></td>
-                <td><?php echo myCellText($orow['ulname'] . ', ' . $orow['ufname'] . ' ' . $orow['umname']); ?></td>
-            </tr>
-            <tr>
-                <td class="font-weight-bold text-nowrap"><?php echo xlt('Order Date'); ?></td>
-                <td><?php echo myCellText(oeFormatShortDate($orow['date_ordered'])); ?></td>
-                <td class="font-weight-bold text-nowrap"><?php echo xlt('Print Date'); ?></td>
-                <td><?php echo text(oeFormatShortDate(date('Y-m-d'))); ?></td>
-            </tr>
-            <tr>
-                <td class="font-weight-bold text-nowrap"><?php echo xlt('Order Status'); ?></td>
-                <td><?php echo $orow['order_status'] ? myCellText($orow['order_status']) : xlt('Pending'); ?></td>
-                <td class="font-weight-bold text-nowrap"><?php echo xlt('Encounter Date'); ?></td>
-                <td><?php echo myCellText(oeFormatShortDate(substr($orow['date'], 0, 10))); ?></td>
-            </tr>
-            <tr>
-                <td class="font-weight-bold text-nowrap"><?php echo xlt('Lab'); ?></td>
-                <td><?php echo myCellText($orow['labname']); ?></td>
-                <td class="font-weight-bold text-nowrap"><?php echo xlt('Receiving Fac.'); ?></td>
-                <td><?php echo myCellText($orow['rcvfacid']); ?></td>
-                <!-- replaced specimen with receiving facility -->
-            </tr>
-        </table>
-        <br/>
-        <table class="table table-sm">
-            <tr class='head'>
-                <td class="align-middle" style="font-size: 1rem;" width='20%'><?php echo xlt('Diagnosis'); ?></td>
-                <td class="align-middle" style="font-size: 1rem;"><?php echo xlt('Diagnosis Description'); ?></td>
-            </tr>
-            <?php
-            foreach ($codes as $code) {
-                echo "<tr><td>" . myCellText($code['code']) . "</td>";
-                echo "<td>" . myCellText($code['short_desc']) . "</td></tr>";
-            }
-            ?>
-        </table>
-        <br/>
-        <table class="table table-sm table-striped">
-            <tr class='head'>
-                <td class="font-weight-bold align-middle" rowspan='2'><?php echo xlt('Ordered Procedure'); ?></td>
-                <td class="font-weight-bold" colspan='5'><?php echo xlt('Report'); ?></td>
-                <td class="font-weight-bold" colspan='7'><?php echo xlt('Results'); ?></td>
-            </tr>
-            <tr class='head'>
-                <td><?php echo xlt('Reported'); ?></td>
-                <td><?php echo xlt('Collected'); ?></td>
-                <td><?php echo xlt('Specimen'); ?></td>
-                <td><?php echo xlt('Status'); ?></td>
-                <td><?php echo xlt('Note'); ?></td>
-                <td><?php echo xlt('Code'); ?></td>
-                <td><?php echo xlt('Name'); ?></td>
-                <td><?php echo xlt('Abn'); ?></td>
-                <td><?php echo xlt('Value'); ?></td>
-                <td><?php echo xlt('Range'); ?></td>
-                <td><?php echo xlt('Units'); ?></td>
-                <td><?php echo xlt('Note'); ?></td>
-            </tr>
-
-            <?php
-            $query = "SELECT " .
-                "po.lab_id, po.date_ordered, pc.procedure_order_seq, pc.procedure_code, " .
-                "pc.procedure_name, pc.diagnoses, " .
-                "pr.date_report, pr.date_report_tz, pr.date_collected, pr.date_collected_tz, " .
-                "pr.procedure_report_id, pr.specimen_num, pr.report_status, pr.review_status, pr.report_notes " .
-                "FROM procedure_order AS po " .
-                "JOIN procedure_order_code AS pc ON pc.procedure_order_id = po.procedure_order_id " .
-                "LEFT JOIN procedure_report AS pr ON pr.procedure_order_id = po.procedure_order_id AND " .
-                "pr.procedure_order_seq = pc.procedure_order_seq " .
-                "WHERE po.procedure_order_id = ? " .
-                "ORDER BY pc.procedure_order_seq, pr.date_report, pr.procedure_report_id";
-
-            $res = sqlStatement($query, array($orderid));
-            $aNotes = array();
-            $finals = array();
-            $empty_results = array('result_code' => '');
-
-            // Context for this call that may be used in other functions.
-            $ctx = array(
-                'lastpcid' => -1,
-                'lastprid' => -1,
-                'encount' => 0,
-                'lino' => 0,
-                'sign_list' => '',
-                'seen_report_ids' => array(),
-            );
-
-            while ($row = sqlFetchArray($res)) {
-                $report_id = empty($row['procedure_report_id']) ? 0 : ($row['procedure_report_id'] + 0);
-
-                $query = "SELECT " .
-                    "ps.result_code, ps.result_text, ps.abnormal, ps.result, ps.range, " .
-                    "ps.result_status, ps.facility, ps.units, ps.comments, ps.document_id, ps.date " .
-                    "FROM procedure_result AS ps " .
-                    "WHERE ps.procedure_report_id = ? " .
-                    "ORDER BY ps.procedure_result_id";
-
-                $rres = sqlStatement($query, array($report_id));
-
-                if ($finals_only) {
-                    // We are consolidating reports.
-                    if (sqlNumRows($rres)) {
-                        $rrowsets = array();
-                        // First pass creates a $rrowsets[$key] for each unique result code in *this* report, with
-                        // the value being an array of the corresponding result rows. This caters to multiple
-                        // occurrences of the same result code in the same report.
-                        while ($rrow = sqlFetchArray($rres)) {
-                            $result_code = empty($rrow['result_code']) ? '' : $rrow['result_code'];
-                            $key = sprintf('%05d/', $row['procedure_order_seq']) . $result_code;
-                            if (!isset($rrowsets[$key])) {
-                                $rrowsets[$key] = array();
-                            }
-
-                            $rrowsets[$key][] = $rrow;
-                        }
-
-                        // Second pass builds onto the array of final results for *all* reports, where each final
-                        // result for a given result code is its *array* of result rows from *one* of the reports.
-                        foreach ($rrowsets as $key => $rrowset) {
-                            // When two reports have the same date, use the result date to decide which is "latest".
-                            if (
-                                isset($finals[$key]) &&
-                                $row['date_report'] == $finals[$key][0]['date_report'] &&
-                                !empty($rrow['date']) && !empty($finals[$key][1]['date']) &&
-                                $rrow['date'] < $finals[$key][1]['date']
-                            ) {
-                                $finals[$key][2] = true; // see comment below
-                                continue;
-                            }
-
-                            // $finals[$key][2] indicates if there are multiple results for this result code.
-                            $finals[$key] = array($row, $rrowset, isset($finals[$key]));
-                        }
-                    } else {
-                        // We have no results for this report.
-                        $key = sprintf('%05d/', $row['procedure_order_seq']);
-                        $finals[$key] = array($row, array($empty_results), false);
-                    }
-                } else {
-                    // We are showing all results for all reports.
-                    if (sqlNumRows($rres)) {
-                        while ($rrow = sqlFetchArray($rres)) {
-                            generate_result_row($ctx, $row, $rrow, false);
-                        }
-                    } else {
-                        generate_result_row($ctx, $row, $empty_results, false);
-                    }
-                }
-            }
-
-            if ($finals_only) {
-                // The sort here was removed because $finals is already ordered by procedure_result_id
-                // within procedure_order_seq which is probably desirable.  Sorting by result code defeats
-                // the sequencing of results chosen by the sender.
-                // ksort($finals);
-                foreach ($finals as $final) {
-                    foreach ($final[1] as $rrow) {
-                        generate_result_row($ctx, $final[0], $rrow, $final[2]);
-                    }
-                }
-            }
-
-            ?>
-        </table>
-        <br/>
-        <table class="table table-sm border-0">
-            <tr>
-                <td class="border-0">
-                    <?php
-                    if (!empty($aNotes)) {
-                        echo "<div class='table-responsive'>";
-                        echo "<table class='table'>\n";
-                        echo " <tr style='background-color: var(--gray200);'>\n";
-                        echo "  <th class='text-center' colspan='2'>" . xlt('Notes') . "</th>\n";
-                        echo " </tr>\n";
-                        foreach ($aNotes as $key => $value) {
-                            echo " <tr>\n";
-                            echo "  <td class='align-top' style='padding:5px 5px;'>" . ($key + 1) . "</td>\n";
-                            // <pre> tag because white space and a fixed font are often used to line things up.
-                            echo "  <td><pre class='border-0 bg-white' style='white-space:pre-wrap;'>" . text($value) . "</pre></td>\n";
-                            echo " </tr>\n";
-                        }
-
-                        echo "</table></div>\n";
-                    }
-                    ?>
-                </td>
-                <td class="border-0 text-right align-top">
-                    <?php if ($input_form && !empty($ctx['priors_omitted']) /* empty($_POST['form_showall']) */) { ?>
-                        <input type='submit' class='btn btn-primary' name='form_showall' value='<?php echo xla('Show All Results'); ?>'
-                               title='<?php echo xla('Include all values reported for each result code'); ?>'/>
-                    <?php } elseif ($input_form && !empty($_POST['form_showall'])) { ?>
-                        <input type='submit' class='btn btn-primary' name='form_latest' value='<?php echo xla('Latest Results Only'); ?>'
-                               title='<?php echo xla('Show only latest values reported for each result code'); ?>'/>
-                    <?php } ?>
-                    <?php if (empty($GLOBALS['PATIENT_REPORT_ACTIVE'])) { ?>
-                        &nbsp;
-                        <input type='button' class='btn btn-primary' value='<?php echo xla('Related Patient Notes'); ?>'
-                            onclick='showpnotes(<?php echo attr_js($orderid); ?>)' />
-                    <?php } ?>
-                    <?php if ($input_form && $ctx['sign_list']) { ?>
-                        &nbsp;
-                        <input type='hidden' class='btn btn-primary' name='form_sign_list' value='<?php echo attr($ctx['sign_list']); ?>'/>
-                        <input type='submit' class='btn btn-primary' name='form_sign' value='<?php echo xla('Sign Results'); ?>'
-                               title='<?php echo xla('Mark these reports as reviewed'); ?>'/>
-                    <?php } ?>
-                    <?php if ($input_form) { ?>
-                        &nbsp;
-                        <input type='button' class='btn btn-danger' value='<?php echo xla('Close'); ?>' onclick='window.close()'/>
-                    <?php } ?>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <?php if ($input_form) { ?>
+    
+    if ($input_form) { ?>
 </form>
-<?php } // end if input form ?>
+<?php } // end if input form
 
-    <?php
-// end function generate_order_report
-}
+} // end function generate_order_report
 ?>
