@@ -16,7 +16,7 @@
 require_once(__DIR__ . "/../../globals.php");
 require_once($GLOBALS["srcdir"] . "/api.inc.php");
 
-function functional_cognitive_status_report($pid, $encounter, $cols, $id)
+function functional_cognitive_status_report($pid, $encounter, $cols, $id, $as_csv = false)
 {
     $count = 0;
     $sql = "SELECT * FROM `form_functional_cognitive_status` WHERE id=? AND pid = ? AND encounter = ?";
@@ -26,8 +26,16 @@ function functional_cognitive_status_report($pid, $encounter, $cols, $id)
         $data[$iter] = $row;
     }
 
+    if ($as_csv) {
+        // CSV headers:
+        echo csvEscape(xlt('Code')) . ",";
+        echo csvEscape(xlt('Code Text')) . ",";
+        echo csvEscape(xlt('Description')) . ",";
+        echo csvEscape(xlt('Date')) . ",";
+        echo csvEscape(xlt('Type')) . "\n";
+    }
     if (!empty($data)) {
-        ?>
+        if (!$as_csv) { ?>
         <table class="table w-100">
             <thead>
             <tr>
@@ -55,6 +63,15 @@ function functional_cognitive_status_report($pid, $encounter, $cols, $id)
             </tbody>
         </table>
         <?php
+        } else {
+            foreach ($data as $key => $value) {
+                echo csvEscape($value['code']) . ",";
+                echo csvEscape($value['codetext']) . ",";
+                echo csvEscape($value['description']) . ",";
+                echo csvEscape($value['date']) . ",";
+                echo csvEscape(($value['activity'] == 1) ? xlt('Cognitive') : xlt('Functional')) . "\n";
+            }
+        }
     }
 }
 

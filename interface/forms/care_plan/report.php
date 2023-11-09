@@ -17,7 +17,7 @@
 
 require_once($GLOBALS["srcdir"] . "/options.inc.php");
 
-function care_plan_report($pid, $encounter, $cols, $id): void
+function care_plan_report($pid, $encounter, $cols, $id, $as_csv = false): void
 {
     $count = 0;
     $encounter = !empty($encounter) ? $encounter : $_SESSION["encounter"] ?? 0;
@@ -30,7 +30,17 @@ function care_plan_report($pid, $encounter, $cols, $id): void
         $data[$iter] = $row;
     }
 
-    if ($data) { ?>
+    if ($as_csv) {
+        // CSV headers:
+        echo csvEscape(xlt('Author')) . ",";
+        echo csvEscape(xlt('Type')) . ",";
+        echo csvEscape(xlt('Code')) . ",";
+        echo csvEscape(xlt('Code Text')) . ",";
+        echo csvEscape(xlt('Description')) . ",";
+        echo csvEscape(xlt('Date')) . "\n";
+    }
+    if ($data) {
+        if (!$as_csv) { ?>
         <table class="table w-100">
             <thead>
             <tr>
@@ -57,5 +67,15 @@ function care_plan_report($pid, $encounter, $cols, $id): void
             </tbody>
         </table>
         <?php
+        } else {
+            foreach ($data as $key => $value) {
+                echo csvEscape($value['user']) . ",";
+                echo csvEscape(getListItemTitle('Plan_of_Care_Type', $value['care_plan_type'])) . ",";
+                echo csvEscape($value['code']) . ",";
+                echo csvEscape($value['codetext']) . ",";
+                echo csvEscape($value['description']) . ",";
+                echo csvEscape($value['date']) . "\n";
+            }
+        }
     }
 }
