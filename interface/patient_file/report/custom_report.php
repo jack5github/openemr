@@ -658,7 +658,7 @@ if ($PDF_OUTPUT) { ?>
                         // echo $sql;
                         $result = sqlStatement($sql, array($pid));
                         while ($row = sqlFetchArray($result)) {
-                            if (!$as_csv) {
+                            if (!$csv) {
                                 echo text($row['batchcom_data']) . ", By: " . text($row['user_name']) . "<br />Text:<br /> " . text($row['msg_txt']) . "<br />\n";
                             } else {
                                 echo csvEscape($row['batchcom_data']) . "," . csvEscape($row['user_name']) . "," . csvEscape($row['msg_txt']) . "\n";
@@ -870,9 +870,6 @@ if ($PDF_OUTPUT) { ?>
                             echo csvEscape("<END " . xlt('Document')) . "\n";
                         }
                     } elseif ($key == "procedures") { // Procedures is an array of checkboxes whose values are procedure order IDs.
-                        /**
-                         * CSV export incomplete
-                         */ 
                         if ($auth_med) {
                             if (!$csv) {
                                 echo "<hr />";
@@ -1025,22 +1022,26 @@ if ($PDF_OUTPUT) { ?>
 
 
                             // call the report function for the form
-                            ?>
+                            if (!$csv) { ?>
                             <div name="search_div" id="search_div_<?php echo attr($form_id) ?>_<?php echo attr($res[1]) ?>" class="report_search_div class_<?php echo attr($res[1]); ?>">
-                                <?php
+                                <?php }
                                 if (!empty($res[1])) {
                                     $esign = $esignApi->createFormESign($formId, $res[1], $form_encounter);
-                                    if ($esign->isSigned('report') && !empty($GLOBALS['esign_report_show_only_signed'])) {
+                                    if (($esign->isSigned('report') && !empty($GLOBALS['esign_report_show_only_signed'])) || empty($GLOBALS['esign_report_show_only_signed'])) {
                                         if (substr($res[1], 0, 3) == 'LBF') {
                                             lbf_report($pid, $form_encounter, $N, $form_id, $res[1], as_csv: $csv);
                                         } else {
-                                            call_user_func($res[1] . "_report", $pid, $form_encounter, $N, $form_id);
-                                        }
-                                    } elseif (empty($GLOBALS['esign_report_show_only_signed'])) {
-                                        if (substr($res[1], 0, 3) == 'LBF') {
-                                            lbf_report($pid, $form_encounter, $N, $form_id, $res[1], as_csv: $csv);
-                                        } else {
-                                            call_user_func($res[1] . '_report', $pid, $form_encounter, $N, $form_id);
+                                            $user_func_args = ['pid' => $pid, 'encounter' => $form_encounter, 'cols' => $N, 'id' => $form_id];
+                                            $user_func = new ReflectionFunction($res[1] . "_report");
+                                            foreach ($user_func->getParameters() as $user_func_param) {
+                                                if ($user_func_param->name == 'as_csv') {
+                                                    $user_func_args['as_csv'] = $csv;
+                                                }
+                                            }
+                                            if (!isset($user_func_args['as_csv'])) {
+                                                echo csvEscape("<! WARNING: " . $res[1] . "_report DOES NOT SUPPORT CSV EXPORT !>") . "\n";
+                                            }
+                                            call_user_func_array($res[1] . "_report", $user_func_args);
                                         }
                                     } else {
                                         echo "<h6>" . xlt("Not signed.") . "</h6>";
@@ -1049,12 +1050,12 @@ if ($PDF_OUTPUT) { ?>
                                         $esign->renderLog();
                                     }
                                 }
-                                ?>
+                            if (!$csv) { ?>
 
                             </div>
-                            <?php
+                            <?php }
 
-                            if ($res[1] == 'newpatient') {
+                            if ($res[1] == 'newpatient' && !$csv) {
                                 // display billing info
                                 $bres = sqlStatement(
                                     "SELECT b.date, b.code, b.code_text, b.modifier " .

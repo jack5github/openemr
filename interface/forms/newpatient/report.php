@@ -20,13 +20,22 @@ use OpenEMR\Services\AppointmentService;
 use OpenEMR\Services\UserService;
 use OpenEMR\Common\Twig\TwigContainer;
 
-function newpatient_report($pid, $encounter, $cols, $id)
+function newpatient_report($pid, $encounter, $cols, $id, $as_csv = false)
 {
     $res = sqlStatement("select e.*, f.name as facility_name from form_encounter as e join facility as f on f.id = e.facility_id where e.pid=? and e.id=?", array($pid,$id));
     $twig = new TwigContainer(__DIR__, $GLOBALS['kernel']);
     $t = $twig->getTwig();
     $encounters = [];
     $userService = new UserService();
+    if ($as_csv) {
+        // CSV headers:
+        echo csvEscape("Category") . ",";
+        echo csvEscape("Reason") . ",";
+        echo csvEscape("Provider") . ",";
+        echo csvEscape(xlt("Referring Provider")) . ",";
+        echo csvEscape(xlt("POS Code")) . ",";
+        echo csvEscape("Facility") . "\n";
+    }
     while ($result = sqlFetchArray($res)) {
         $hasAccess = (empty($result['sensitivity']) || AclMain::aclCheckCore('sensitivities', $result['sensitivity']));
         $rawProvider = $userService->getUser($result["provider_id"]);
@@ -51,6 +60,16 @@ function newpatient_report($pid, $encounter, $cols, $id)
             'posCode' => $posCode,
             'facility' => $facility_name,
         ];
+        if ($as_csv) {
+            echo csvEscape(end($encounters)['category']) . ",";
+            echo csvEscape(end($encounters)['reason']) . ",";
+            echo csvEscape(end($encounters)['provider']) . ",";
+            echo csvEscape(end($encounters)['referringProvider']) . ",";
+            echo csvEscape(end($encounters)['posCode']) . ",";
+            echo csvEscape(end($encounters)['facility']) . "\n";
+        }
     }
-    echo $t->render("templates/report.html.twig", ['encounters' => $encounters]);
+    if (!$as_csv) {
+        echo $t->render("templates/report.html.twig", ['encounters' => $encounters]);
+    }
 }
