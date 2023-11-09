@@ -1027,13 +1027,13 @@ if ($PDF_OUTPUT) { ?>
                                     $esign = $esignApi->createFormESign($formId, $res[1], $form_encounter);
                                     if ($esign->isSigned('report') && !empty($GLOBALS['esign_report_show_only_signed'])) {
                                         if (substr($res[1], 0, 3) == 'LBF') {
-                                            call_user_func("lbf_report", $pid, $form_encounter, $N, $form_id, $res[1]);
+                                            lbf_report($pid, $form_encounter, $N, $form_id, $res[1], as_csv: $csv);
                                         } else {
                                             call_user_func($res[1] . "_report", $pid, $form_encounter, $N, $form_id);
                                         }
                                     } elseif (empty($GLOBALS['esign_report_show_only_signed'])) {
                                         if (substr($res[1], 0, 3) == 'LBF') {
-                                            call_user_func('lbf_report', $pid, $form_encounter, $N, $form_id, $res[1]);
+                                            lbf_report($pid, $form_encounter, $N, $form_id, $res[1], as_csv: $csv);
                                         } else {
                                             call_user_func($res[1] . '_report', $pid, $form_encounter, $N, $form_id);
                                         }
