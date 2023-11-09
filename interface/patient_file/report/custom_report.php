@@ -479,7 +479,7 @@ if ($PDF_OUTPUT) { ?>
                                 "subscriber_lname", "subscriber_relationship", "subscriber_ss", "subscriber_DOB", "subscriber_phone",
                                 "subscriber_street", "subscriber_postal_code", "subscriber_city", "subscriber_state", "subscriber_country",
                                 "subscriber_employer", "subscriber_employer_street", "subscriber_employer_city", "subscriber_employer_postal_code",
-                                "subcriber_employer_state", "subscriber_employer_country"
+                                "subscriber_employer_state", "subscriber_employer_country"
                             ];
                             $insurance_columns_escaped = $insurance_columns;
                             for ($col = 0; $col < count($insurance_columns_escaped); $col++) {
