@@ -590,12 +590,12 @@ function generate_order_report($orderid, $input_form = false, $genstyles = true,
         // CSV headers:
         echo csvEscape(xlt("Patient ID")) . ",";
         echo csvEscape(xlt("Order ID")) . ",";
-        echo csvEscape(xlt("Patient Name") . " First") . ",";
-        echo csvEscape(xlt("Patient Name") . " Middle") . ",";
-        echo csvEscape(xlt("Patient Name") . " Last") . ",";
-        echo csvEscape(xlt("Ordered By") . " First") . ",";
-        echo csvEscape(xlt("Ordered By") . " Middle") . ",";
-        echo csvEscape(xlt("Ordered By") . " Last") . ",";
+        echo csvEscape(xlt("Patient First Name")) . ",";
+        echo csvEscape(xlt("Patient") . " " . xlt("Middle Name")) . ",";
+        echo csvEscape(xlt("Patient Last Name")) . ",";
+        echo csvEscape(xlt("Ordered By") . " " . xlt("First Name")) . ",";
+        echo csvEscape(xlt("Ordered By") . " " . xlt("Middle Name")) . ",";
+        echo csvEscape(xlt("Ordered By") . " " . xlt("Last Name")) . ",";
         echo csvEscape(xlt("Order Date")) . ",";
         echo csvEscape(xlt("Print Date")) . ",";
         echo csvEscape(xlt("Order Status")) . ",";
@@ -754,7 +754,7 @@ function generate_order_report($orderid, $input_form = false, $genstyles = true,
                         if ($as_csv) {
                             echo csvEscape("<BEGIN " . xlt('Notes') . ">") . "\n";
                             // CSV headers:
-                            echo csvEscape("Key") . "," . csvEscape("Notes") . "\n";
+                            echo csvEscape(xlt("Key")) . "," . csvEscape(xlt("Notes")) . "\n";
                         }
                         if (!empty($aNotes)) {
                             if (!$as_csv) {

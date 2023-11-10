@@ -36,7 +36,7 @@ function misc_billing_options_report($pid, $encounter, $cols, $id, $as_csv = fal
                 if ($csv_columns != "") {
                     $csv_columns .= ",";
                 }
-                $csv_columns .= csvEscape(ucwords(str_replace("_", " ", $key)));
+                $csv_columns .= csvEscape(xlt(ucwords(str_replace("_", " ", $key))));
             }
             echo $csv_columns . "\n";
         }

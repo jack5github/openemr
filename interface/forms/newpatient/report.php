@@ -29,12 +29,12 @@ function newpatient_report($pid, $encounter, $cols, $id, $as_csv = false)
     $userService = new UserService();
     if ($as_csv) {
         // CSV headers:
-        echo csvEscape("Category") . ",";
-        echo csvEscape("Reason") . ",";
-        echo csvEscape("Provider") . ",";
+        echo csvEscape(xlt("Category")) . ",";
+        echo csvEscape(xlt("Reason")) . ",";
+        echo csvEscape(xlt("Provider")) . ",";
         echo csvEscape(xlt("Referring Provider")) . ",";
         echo csvEscape(xlt("POS Code")) . ",";
-        echo csvEscape("Facility") . "\n";
+        echo csvEscape(xlt("Facility")) . "\n";
     }
     while ($result = sqlFetchArray($res)) {
         $hasAccess = (empty($result['sensitivity']) || AclMain::aclCheckCore('sensitivities', $result['sensitivity']));

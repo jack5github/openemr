@@ -56,7 +56,7 @@ function reviewofs_report($pid, $encounter, $cols, $id, $as_csv = false)
                 if ($csv_columns != '') {
                     $csv_columns .= ",";
                 }
-                $csv_columns .= csvEscape(ucwords(str_replace("_", " ", $key)));
+                $csv_columns .= csvEscape(xlt(ucwords(str_replace("_", " ", $key))));
             }
             echo $csv_columns . "\n";
             $csv_fields = "";

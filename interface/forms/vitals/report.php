@@ -59,7 +59,7 @@ function vitals_report($pid, $encounter, $cols, $id, $print = true, $as_csv = fa
                 } else if ($key == "ped_head_circ") {
                     $vitals .= csvEscape(xlt("Pediatric Head Circumference Percentile"));
                 } else {
-                    $vitals .= csvEscape(ucwords(str_replace("_", " ", $key)));
+                    $vitals .= csvEscape(xlt(ucwords(str_replace("_", " ", $key))));
                 }
             }
             $vitals .= "\n";

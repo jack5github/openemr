@@ -503,7 +503,7 @@ if ($PDF_OUTPUT) { ?>
                                     default:
                                         $insurance_columns_escaped[$col] = ucwords(str_replace('_', ' ', $insurance_columns_escaped[$col]));
                                 }
-                                $insurance_columns_escaped[$col] = csvEscape($insurance_columns_escaped[$col]);
+                                $insurance_columns_escaped[$col] = csvEscape(xlt($insurance_columns_escaped[$col]));
                             }
                             echo implode(',', $insurance_columns_escaped) . "\n";
                             foreach (["primary", "secondary", "tertiary"] as $insurance_type) {
@@ -536,11 +536,11 @@ if ($PDF_OUTPUT) { ?>
                         } else {
                             echo csvEscape("<BEGIN " . xlt('Billing Information') . ">") . "\n";
                             // CSV headers:
-                            echo csvEscape("Date") . ",";
-                            echo csvEscape("Code Type") . ",";
-                            echo csvEscape("Code") . ",";
-                            echo csvEscape("Code Text") . ",";
-                            echo csvEscape("Modifier") . "\n";
+                            echo csvEscape(xlt("Date")) . ",";
+                            echo csvEscape(xlt("Code Type")) . ",";
+                            echo csvEscape(xlt("Code")) . ",";
+                            echo csvEscape(xlt("Code Text")) . ",";
+                            echo csvEscape(xlt("Modifier")) . "\n";
                         }
                         if (!empty($ar['newpatient']) && count($ar['newpatient']) > 0) {
                             $billings = array();
@@ -602,9 +602,9 @@ if ($PDF_OUTPUT) { ?>
                             } else {
                                 echo csvEscape("<BEGIN " . xlt('Patient Immunization') . ">") . "\n";
                                 // CSV headers:
-                                echo csvEscape("Date") . ",";
-                                echo csvEscape("Vaccine") . ",";
-                                echo csvEscape("Notes") . "\n";
+                                echo csvEscape(xlt("Date")) . ",";
+                                echo csvEscape(xlt("Vaccine")) . ",";
+                                echo csvEscape(xlt("Notes")) . "\n";
                             }
                             $sql = "select i1.immunization_id, i1.administered_date, substring(i1.note,1,20) as immunization_note, c.code_text_short " .
                                 " from immunizations i1 " .
@@ -650,18 +650,23 @@ if ($PDF_OUTPUT) { ?>
                         } else {
                             echo csvEscape("<BEGIN " . xlt('Patient Communication sent') . ">") . "\n";
                             // CSV headers:
-                            echo csvEscape("Type/Subject/Date") . ",";
-                            echo csvEscape("By") . ",";
-                            echo csvEscape("Text") . "\n";
+                            echo csvEscape(xlt("Type")) . ",";
+                            echo csvEscape(xlt("Subject")) . ",";
+                            echo csvEscape(xlt("Date")) . ",";
+                            echo csvEscape(xlt("By")) . ",";
+                            echo csvEscape(xlt("Text")) . "\n";
                         }
                         $sql = "SELECT concat( 'Messsage Type: ', batchcom.msg_type, ', Message Subject: ', batchcom.msg_subject, ', Sent on:', batchcom.msg_date_sent ) AS batchcom_data, batchcom.msg_text, concat( users.fname, users.lname ) AS user_name FROM `batchcom` JOIN `users` ON users.id = batchcom.sent_by WHERE batchcom.patient_id=?";
+                        if ($csv) {
+                            $sql = "SELECT batchcom.msg_type AS msg_type, batchcom.msg_subject AS msg_subject, batchcom.msg_date_sent AS msg_date, batchcom.msg_text AS msg_txt, concat( users.fname, users.lname ) AS user_name FROM `batchcom` JOIN `users` ON users.id = batchcom.sent_by WHERE batchcom.patient_id=?";
+                        }
                         // echo $sql;
                         $result = sqlStatement($sql, array($pid));
                         while ($row = sqlFetchArray($result)) {
                             if (!$csv) {
                                 echo text($row['batchcom_data']) . ", By: " . text($row['user_name']) . "<br />Text:<br /> " . text($row['msg_txt']) . "<br />\n";
                             } else {
-                                echo csvEscape($row['batchcom_data']) . "," . csvEscape($row['user_name']) . "," . csvEscape($row['msg_txt']) . "\n";
+                                echo csvEscape($row['msg_type']) . "," . csvEscape($row['msg_subject']) . "," . csvEscape($row['msg_date']) . "," . csvEscape($row['user_name']) . "," . csvEscape($row['msg_txt']) . "\n";
                             }
                         }
 
@@ -678,10 +683,10 @@ if ($PDF_OUTPUT) { ?>
                         } else {
                             echo csvEscape("<BEGIN " . xlt('Patient Notes') . ">") . "\n";
                             // CSV headers:
-                            echo csvEscape("Date") . ",";
-                            echo csvEscape("From") . ",";
-                            echo csvEscape("To") . ",";
-                            echo csvEscape("Body") . "\n";
+                            echo csvEscape(xlt("Date")) . ",";
+                            echo csvEscape(xlt("From")) . ",";
+                            echo csvEscape(xlt("To")) . ",";
+                            echo csvEscape(xlt("Message")) . "\n";
                         }
                         printPatientNotes($pid, as_csv: $csv);
                         if (!$csv) {
@@ -915,8 +920,8 @@ if ($PDF_OUTPUT) { ?>
                             // CSV headers:
                             echo csvEscape(xlt('Type')) . ",";
                             echo csvEscape(xlt('Title')) . ",";
-                            echo csvEscape("Comments") . ",";
-                            echo csvEscape("Drug Dosage Instructions") . ",";
+                            echo csvEscape(xlt("Comments")) . ",";
+                            echo csvEscape(xlt("Drug Dosage Instructions")) . ",";
                             echo csvEscape(xlt('Name (GMDN PT Name)')) . ",";
                             echo csvEscape(xlt('Description')) . ",";
                             echo csvEscape(xlt('Brand Name')) . ",";
@@ -1011,7 +1016,7 @@ if ($PDF_OUTPUT) { ?>
                             } else {
                                 echo csvEscape("<BEGIN " . xlt('Diagnosis') . ">") . "\n";
                                 // CSV headers:
-                                echo csvEscape("Code") . "," . csvEscape("Description") . "\n";
+                                echo csvEscape(xlt("Code")) . "," . csvEscape(xlt("Description")) . "\n";
                             }
                             $dcodes = explode(";", $diagnosis);
                             foreach ($dcodes as $dcode) {

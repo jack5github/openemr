@@ -3786,7 +3786,7 @@ function display_layout_rows($formtype, $result1, $result2 = '', $as_csv = false
                     // CSV headers:
                     if ($frow['title']) {
                         if ($group_name) {
-                            $csv_last_column = csvEscape($group_name . " " . xl_layout_label($frow['title']));
+                            $csv_last_column = csvEscape(xlt($group_name) . " " . xl_layout_label($frow['title']));
                         } else {
                             $csv_last_column = csvEscape(xl_layout_label($frow['title']));
                         }

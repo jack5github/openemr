@@ -21,10 +21,10 @@ function soap_report($pid, $encounter, $cols, $id, $as_csv = false)
     $data = formFetch("form_soap", $id);
     if ($as_csv) {
         // CSV headers:
-        echo csvEscape("Subjective") . ",";
-        echo csvEscape("Objective") . ",";
-        echo csvEscape("Assessment") . ",";
-        echo csvEscape("Plan") . "\n";
+        echo csvEscape(xlt("Subjective")) . ",";
+        echo csvEscape(xlt("Objective")) . ",";
+        echo csvEscape(xlt("Assessment")) . ",";
+        echo csvEscape(xlt("Plan")) . "\n";
     }
     if ($data) {
         if (!$as_csv) {

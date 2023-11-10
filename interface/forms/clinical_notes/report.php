@@ -49,7 +49,7 @@ function clinical_notes_report($pid, $encounter, $cols, $id, $as_csv = false)
         echo csvEscape(xlt("Category")) . ",";
         echo csvEscape(xlt("Author")) . ",";
         echo csvEscape(xlt("Code")) . ",";
-        echo csvEscape("Narrative") . "\n";
+        echo csvEscape(xlt("Narrative")) . "\n";
         foreach ($data as $notes) {
             echo csvEscape($notes['date']) . ",";
             echo csvEscape($notes['codetext'] ? $notes['codetext'] : xlt("Unspecified")) . ",";

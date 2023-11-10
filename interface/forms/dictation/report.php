@@ -20,8 +20,8 @@ function dictation_report($pid, $encounter, $cols, $id, $as_csv = false)
     $data = formFetch("form_dictation", $id);
     if ($as_csv) {
         // CSV headers:
-        echo csvEscape("Dictation") . ",";
-        echo csvEscape("Additional Notes") . "\n";
+        echo csvEscape(xlt("Dictation")) . ",";
+        echo csvEscape(xlt("Additional Notes")) . "\n";
     }
     if ($data) {
         if (!$as_csv) {
