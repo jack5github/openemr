@@ -280,7 +280,7 @@ function printPatientTransactions($pid, $as_csv = false)
             echo "</p>\n";
         } else {
             echo csvEscape("<BEGIN " . $row['date'] . " " . generate_display_field(array('data_type' => '1','list_id' => 'transactions'), $row['title'], as_csv: $as_csv) . ">") . "\n";
-            echo lbt_report($row['id'], $row['title'], as_csv: $as_csv) . "\n";
+            echo lbt_report($row['id'], $row['title'], as_csv: $as_csv);
             echo csvEscape("<END " . $row['date'] . " " . generate_display_field(array('data_type' => '1','list_id' => 'transactions'), $row['title'], as_csv: $as_csv) . ">") . "\n";
         }
     }

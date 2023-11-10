@@ -1107,11 +1107,11 @@ if ($PDF_OUTPUT) { ?>
                                                 }
                                             }
                                             if (!isset($user_func_args['as_csv'])) {
-                                                echo csvEscape("<! WARNING: " . $res[1] . "_report DOES NOT SUPPORT CSV EXPORT !>") . "\n";
+                                                echo csvEscape("<! WARNING: function " . $res[1] . "_report DOES NOT SUPPORT CSV EXPORT !>") . "\n";
                                             }
                                             call_user_func_array($res[1] . "_report", $user_func_args);
                                         }
-                                    } else {
+                                    } else if (!$csv) {
                                         echo "<h6>" . xlt("Not signed.") . "</h6>";
                                     }
                                     if ($esign->isLogViewable("report")) {
