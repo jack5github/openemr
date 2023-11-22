@@ -15,8 +15,8 @@
 
 use OpenEMR\Billing\MiscBillingOptions;
 
-require_once(dirname(__FILE__) . '/../../globals.php');
-require_once($GLOBALS["srcdir"] . "/api.inc.php");
+require_once dirname(__FILE__) . '/../../globals.php';
+require_once $GLOBALS["srcdir"] . "/api.inc.php";
 
 function misc_billing_options_report($pid, $encounter, $cols, $id, $as_csv = false)
 {
@@ -43,12 +43,11 @@ function misc_billing_options_report($pid, $encounter, $cols, $id, $as_csv = fal
         $csv_fields = "";
         foreach ($data as $key => $value) {
             if (!$as_csv) {
-                if (
-                    $key == "id" || $key == "pid" || $key == "user" || $key == "groupname" ||
-                    $key == "authorized" || $key == "activity" || $key == "date" || $value == "" ||
-                    $value == "0" || $value == "0000-00-00 00:00:00" || $value == "0000-00-00" ||
-                    ($key == "box_14_date_qual" && ($data['onset_date'] == 0)) ||
-                    ($key == "box_15_date_qual" && ($data['date_initial_treatment'] == 0))
+                if ($key == "id" || $key == "pid" || $key == "user" || $key == "groupname" 
+                    || $key == "authorized" || $key == "activity" || $key == "date" || $value == "" 
+                    || $value == "0" || $value == "0000-00-00 00:00:00" || $value == "0000-00-00" 
+                    || ($key == "box_14_date_qual" && ($data['onset_date'] == 0)) 
+                    || ($key == "box_15_date_qual" && ($data['date_initial_treatment'] == 0))
                 ) {
                     continue;
                 }
@@ -64,15 +63,15 @@ function misc_billing_options_report($pid, $encounter, $cols, $id, $as_csv = fal
                 $pqe = $data['provider_qualifier_code'];
                 if (!empty($pqe)) {
                     switch ($pqe) {
-                        case ($pqe == "DN"):
-                            $value = "Referring";
-                            break;
-                        case ($pqe == "DK"):
-                            $value = "Ordering";
-                            break;
-                        case ($pqe == "DQ"):
-                            $value = "Supervising";
-                            break;
+                    case ($pqe == "DN"):
+                        $value = "Referring";
+                        break;
+                    case ($pqe == "DK"):
+                        $value = "Ordering";
+                        break;
+                    case ($pqe == "DQ"):
+                        $value = "Supervising";
+                        break;
                     }
 
                     $key = 'Box 17 Qualifier';
@@ -80,8 +79,10 @@ function misc_billing_options_report($pid, $encounter, $cols, $id, $as_csv = fal
             }
 
             if ($key === 'provider_id') {
-                $trow = sqlQuery("SELECT id, lname, fname FROM users WHERE " .
-                         "id = ? ", array($value));
+                $trow = sqlQuery(
+                    "SELECT id, lname, fname FROM users WHERE " .
+                    "id = ? ", array($value)
+                );
                 if (isset($trow['fname']) && isset($trow['lname'])) {
                     $value = $trow['fname'] . ' ' . $trow['lname'];
                 }

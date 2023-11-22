@@ -12,15 +12,15 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-require_once(__DIR__ . "/../../globals.php");
-require_once($GLOBALS["srcdir"] . "/api.inc.php");
-require_once($GLOBALS['fileroot'] . "/library/patient.inc.php");
+require_once __DIR__ . "/../../globals.php";
+require_once $GLOBALS["srcdir"] . "/api.inc.php";
+require_once $GLOBALS['fileroot'] . "/library/patient.inc.php";
 
 function US_weight($pounds, $mode = 1)
 {
 
     if ($mode == 1) {
-        return $pounds . " " . xl('lb') ;
+        return $pounds . " " . xl('lb');
     } else {
         $pounds_int = floor($pounds);
         $ounces = round(($pounds - $pounds_int) * 16);
@@ -44,7 +44,8 @@ function vitals_report($pid, $encounter, $cols, $id, $print = true, $as_csv = fa
             foreach ($data as $key => $value) {
                 // CSV headers:
                 if ($key == "uuid" || $key == "id" || $key == "pid" || $key == "user" || $key == "groupname" || $key == "authorized" || $key == "activity" || $key == "date"
-                    || $key == "bps") {
+                    || $key == "bps"
+                ) {
                     continue;
                 }
                 if ($vitals != '') {
@@ -67,13 +68,12 @@ function vitals_report($pid, $encounter, $cols, $id, $print = true, $as_csv = fa
 
         foreach ($data as $key => $value) {
             if (!$as_csv) {
-                if (
-                    $key == "uuid" ||
-                    $key == "id" || $key == "pid" ||
-                    $key == "user" || $key == "groupname" ||
-                    $key == "authorized" || $key == "activity" ||
-                    $key == "date" || $value == "" ||
-                    $value == "0000-00-00 00:00:00" || $value == "0.0"
+                if ($key == "uuid" 
+                    || $key == "id" || $key == "pid" 
+                    || $key == "user" || $key == "groupname" 
+                    || $key == "authorized" || $key == "activity" 
+                    || $key == "date" || $value == "" 
+                    || $value == "0000-00-00 00:00:00" || $value == "0.0"
                 ) {
                     // skip certain data
                     continue;

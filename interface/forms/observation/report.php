@@ -13,8 +13,8 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-require_once(__DIR__ . "/../../globals.php");
-require_once($GLOBALS["srcdir"] . "/api.inc.php");
+require_once __DIR__ . "/../../globals.php";
+require_once $GLOBALS["srcdir"] . "/api.inc.php";
 
 function observation_report($pid, $encounter, $cols, $id, $as_csv = false)
 {

@@ -10,7 +10,7 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-require_once($GLOBALS["srcdir"] . "/options.inc.php");
+require_once $GLOBALS["srcdir"] . "/options.inc.php";
 
 use OpenEMR\Common\Acl\AclMain;
 use OpenEMR\Common\Utils\FormatMoney;
@@ -205,7 +205,7 @@ function printListData($pid, $list_type, $list_activity = "%")
 
 function printPatientNotes($pid, $as_csv = false)
 {
-  // exclude ALL deleted notes
+    // exclude ALL deleted notes
     $res = sqlStatement("select * from pnotes where pid = ? and deleted != 1 and activity = 1 order by date", array($pid));
     while ($result = sqlFetchArray($res)) {
         if (!$as_csv) {
@@ -226,8 +226,10 @@ function lbt_current_value($frow, $formid)
     $field_id = $frow['field_id'];
     $currvalue = '';
     if ($formid) {
-        $ldrow = sqlQuery("SELECT field_value FROM lbt_data WHERE " .
-        "form_id = ? AND field_id = ?", array($formid, $field_id));
+        $ldrow = sqlQuery(
+            "SELECT field_value FROM lbt_data WHERE " .
+            "form_id = ? AND field_id = ?", array($formid, $field_id)
+        );
         if (!empty($ldrow)) {
             $currvalue = $ldrow['field_value'];
         }
@@ -241,9 +243,11 @@ function lbt_current_value($frow, $formid)
 function lbt_report($id, $formname, $as_csv = false)
 {
     $arr = array();
-    $fres = sqlStatement("SELECT * FROM layout_options " .
-    "WHERE form_id = ? AND uor > 0 " .
-    "ORDER BY group_id, seq", array($formname));
+    $fres = sqlStatement(
+        "SELECT * FROM layout_options " .
+        "WHERE form_id = ? AND uor > 0 " .
+        "ORDER BY group_id, seq", array($formname)
+    );
     while ($frow = sqlFetchArray($fres)) {
         $field_id  = $frow['field_id'];
         $currvalue = lbt_current_value($frow, $id);
@@ -305,9 +309,11 @@ function printPatientBilling($pid, $as_csv = false)
 
 function getPatientBillingEncounter($pid, $encounter)
 {
-    $erow = sqlQuery("SELECT provider_id FROM form_encounter WHERE " .
-    "pid = ? AND encounter = ? " .
-    "ORDER BY id DESC LIMIT 1", array($pid, $encounter));
+    $erow = sqlQuery(
+        "SELECT provider_id FROM form_encounter WHERE " .
+        "pid = ? AND encounter = ? " .
+        "ORDER BY id DESC LIMIT 1", array($pid, $encounter)
+    );
     $inv_provider = $erow['provider_id'] + 0;
     $sql = "SELECT b.*, u.id, u.fname, u.mname, u.lname, " .
     "CONCAT(u.fname,' ', u.lname) AS provider_name, u.federaltaxid " .
@@ -333,7 +339,7 @@ function printPatientForms($pid, $cols)
     //this function takes a $pid
     $inclookupres = sqlStatement("select distinct formdir from forms where pid=? AND deleted=0", array($pid));
     while ($result = sqlFetchArray($inclookupres)) {
-        include_once($GLOBALS['incdir'] . "/forms/" . $result["formdir"] . "/report.php");
+        include_once $GLOBALS['incdir'] . "/forms/" . $result["formdir"] . "/report.php";
     }
 
     $res = sqlStatement("select * from forms where pid=? AND deleted=0 order by date", array($pid));
@@ -343,12 +349,14 @@ function printPatientForms($pid, $cols)
             echo "<h1>" . text($result["form_name"]) . "</h1>";
 
             // display the provider info
-            $tmp = sqlQuery("SELECT u.title, u.fname, u.mname, u.lname " .
+            $tmp = sqlQuery(
+                "SELECT u.title, u.fname, u.mname, u.lname " .
                                     "FROM forms AS f, users AS u WHERE " .
                                     "f.pid = ? AND f.encounter = ? AND " .
                                     "f.formdir = 'newpatient' AND u.username = f.user " .
                                     " AND f.deleted=0 " . //--JRM--
-                                    "ORDER BY f.id LIMIT 1", array($pid, $result['encounter']));
+                "ORDER BY f.id LIMIT 1", array($pid, $result['encounter'])
+            );
             echo " " . xlt('Provider') . ": " . text($tmp['title']) . " " .
                 text($tmp['fname']) . " " . text($tmp['mname']) . " " . text($tmp['lname']);
             echo "<br/>";

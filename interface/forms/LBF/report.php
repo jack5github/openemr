@@ -12,8 +12,8 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-require_once(dirname(__FILE__) . '/../../globals.php');
-require_once($GLOBALS["srcdir"] . "/api.inc.php");
+require_once dirname(__FILE__) . '/../../globals.php';
+require_once $GLOBALS["srcdir"] . "/api.inc.php";
 
 use OpenEMR\Common\Acl\AclMain;
 
@@ -24,7 +24,7 @@ use OpenEMR\Common\Acl\AclMain;
 function lbf_report($pid, $encounter, $cols, $id, $formname, $no_wrap = false, $as_csv = false)
 {
     global $CPR;
-    require_once($GLOBALS["srcdir"] . "/options.inc.php");
+    include_once $GLOBALS["srcdir"] . "/options.inc.php";
 
     $grparr = array();
     getLayoutProperties($formname, $grparr, '*');
@@ -40,9 +40,11 @@ function lbf_report($pid, $encounter, $cols, $id, $formname, $no_wrap = false, $
 
     $arr = array();
     $shrow = getHistoryData($pid);
-    $fres = sqlStatement("SELECT * FROM layout_options " .
-    "WHERE form_id = ? AND uor > 0 " .
-    "ORDER BY group_id, seq", array($formname));
+    $fres = sqlStatement(
+        "SELECT * FROM layout_options " .
+        "WHERE form_id = ? AND uor > 0 " .
+        "ORDER BY group_id, seq", array($formname)
+    );
     while ($frow = sqlFetchArray($fres)) {
         $field_id  = $frow['field_id'];
         $currvalue = '';

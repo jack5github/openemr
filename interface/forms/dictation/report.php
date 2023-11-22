@@ -10,8 +10,8 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-require_once(dirname(__FILE__) . '/../../globals.php');
-require_once($GLOBALS["srcdir"] . "/api.inc.php");
+require_once dirname(__FILE__) . '/../../globals.php';
+require_once $GLOBALS["srcdir"] . "/api.inc.php";
 
 function dictation_report($pid, $encounter, $cols, $id, $as_csv = false)
 {
@@ -26,10 +26,9 @@ function dictation_report($pid, $encounter, $cols, $id, $as_csv = false)
     if ($data) {
         if (!$as_csv) {
             foreach ($data as $key => $value) {
-                if (
-                    $key == "id" || $key == "pid" || $key == "user" ||
-                    $key == "groupname" || $key == "authorized" || $key == "activity" ||
-                    $key == "date" || $value == "" || $value == "0000-00-00 00:00:00"
+                if ($key == "id" || $key == "pid" || $key == "user" 
+                    || $key == "groupname" || $key == "authorized" || $key == "activity" 
+                    || $key == "date" || $value == "" || $value == "0000-00-00 00:00:00"
                 ) {
                     continue;
                 }

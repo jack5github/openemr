@@ -12,8 +12,8 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-require_once(dirname(__FILE__) . '/../../globals.php');
-require_once($GLOBALS["srcdir"] . "/api.inc.php");
+require_once dirname(__FILE__) . '/../../globals.php';
+require_once $GLOBALS["srcdir"] . "/api.inc.php";
 
 function clinical_instructions_report($pid, $encounter, $cols, $id, $as_csv = false)
 {
@@ -25,7 +25,7 @@ function clinical_instructions_report($pid, $encounter, $cols, $id, $as_csv = fa
     }
     if ($data) {
         if (!$as_csv) {
-        ?>
+            ?>
         <table style='border-collapse:collapse;border-spacing:0;width: 100%;'>
             <tr>
                 <td align='center' style='border:1px solid #ccc;padding:4px;'><span class=bold><?php echo xlt('Instructions'); ?></span></td>
@@ -34,7 +34,7 @@ function clinical_instructions_report($pid, $encounter, $cols, $id, $as_csv = fa
                 <td style='border:1px solid #ccc;padding:4px;'><span class=text><?php echo nl2br(text($data['instruction'])); ?></span></td>
             </tr>
         </table>
-        <?php
+            <?php
         } else {
             echo csvEscape($data['instruction']) . "\n";
         }

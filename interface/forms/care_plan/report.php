@@ -15,7 +15,7 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-require_once($GLOBALS["srcdir"] . "/options.inc.php");
+require_once $GLOBALS["srcdir"] . "/options.inc.php";
 
 function care_plan_report($pid, $encounter, $cols, $id, $as_csv = false): void
 {
@@ -63,10 +63,10 @@ function care_plan_report($pid, $encounter, $cols, $id, $as_csv = false): void
                     <td class="border p-1"><span class=text><?php echo text($value['description']); ?></span></td>
                     <td class="border p-1"><span class=text><?php echo text($value['date']); ?></span></td>
                 </tr>
-                <?php } ?>
+            <?php } ?>
             </tbody>
         </table>
-        <?php
+            <?php
         } else {
             foreach ($data as $key => $value) {
                 echo csvEscape($value['user']) . ",";

@@ -1,28 +1,28 @@
 <?php
 
 /**
-* Script to display results for a given procedure order.
-*
-* Copyright (C) 2013-2016 Rod Roark <rod@sunsetsystems.com>
-* Copyright (C) 2018-2019 Jerry Padgett <sjpadgett@gmail.com>
-*
-* LICENSE: This program is free software; you can redistribute it and/or
-* modify it under the terms of the GNU General Public License
-* as published by the Free Software Foundation; either version 2
-* of the License, or (at your option) any later version.
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://opensource.org/licenses/gpl-license.php>.
-*
-* @package   OpenEMR
-* @author    Rod Roark <rod@sunsetsystems.com>
-* @author    Jerry Padgett <sjpadgett@gmail.com>
-*/
+ * Script to display results for a given procedure order.
+ *
+ * Copyright (C) 2013-2016 Rod Roark <rod@sunsetsystems.com>
+ * Copyright (C) 2018-2019 Jerry Padgett <sjpadgett@gmail.com>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://opensource.org/licenses/gpl-license.php>.
+ *
+ * @package OpenEMR
+ * @author  Rod Roark <rod@sunsetsystems.com>
+ * @author  Jerry Padgett <sjpadgett@gmail.com>
+ */
 
-require_once($GLOBALS["srcdir"] . "/options.inc.php");
+require_once $GLOBALS["srcdir"] . "/options.inc.php";
 
 use OpenEMR\Common\Acl\AclMain;
 
@@ -426,7 +426,7 @@ function generate_order_report($orderid, $input_form = false, $genstyles = true,
         border-color: var(--black);
     }
 
-    <?php } else { ?>
+        <?php } else { ?>
     .labres tr.head {
         font-size: 0.8125rem;
         text-align: center;
@@ -449,7 +449,7 @@ function generate_order_report($orderid, $input_form = false, $genstyles = true,
         padding: 4px;
     }
 
-    <?php } ?>
+        <?php } ?>
 
     @media print {
         .labres tr.head,
@@ -458,14 +458,14 @@ function generate_order_report($orderid, $input_form = false, $genstyles = true,
         }
     }
 </style>
-<?php }
+    <?php }
 
     if (!$as_csv) {
 
         if ($input_form) { ?>
             <script src="<?php echo $GLOBALS['webroot']; ?>/library/textformat.js"></script>
         <?php } // end if input form
-    ?>
+        ?>
 
         <?php if (empty($GLOBALS['PATIENT_REPORT_ACTIVE'])) { ?>
     <script>
@@ -493,7 +493,7 @@ function generate_order_report($orderid, $input_form = false, $genstyles = true,
         }
     </script>
 
-    <?php } // end if not patient report ?>
+        <?php } // end if not patient report ?>
         <?php if ($input_form) { ?>
     <form method='post' action='single_order_results.php?orderid=<?php echo attr_url($orderid); ?>'>
         <?php } // end if input form
@@ -702,11 +702,10 @@ function generate_order_report($orderid, $input_form = false, $genstyles = true,
                 // result for a given result code is its *array* of result rows from *one* of the reports.
                 foreach ($rrowsets as $key => $rrowset) {
                     // When two reports have the same date, use the result date to decide which is "latest".
-                    if (
-                        isset($finals[$key]) &&
-                        $row['date_report'] == $finals[$key][0]['date_report'] &&
-                        !empty($rrow['date']) && !empty($finals[$key][1]['date']) &&
-                        $rrow['date'] < $finals[$key][1]['date']
+                    if (isset($finals[$key]) 
+                        && $row['date_report'] == $finals[$key][0]['date_report'] 
+                        && !empty($rrow['date']) && !empty($finals[$key][1]['date']) 
+                        && $rrow['date'] < $finals[$key][1]['date']
                     ) {
                         $finals[$key][2] = true; // see comment below
                         continue;
@@ -750,37 +749,37 @@ function generate_order_report($orderid, $input_form = false, $genstyles = true,
             <table class="table table-sm border-0">
                 <tr>
                     <td class="border-0">
-                        <?php }
-                        if ($as_csv) {
-                            echo csvEscape("<BEGIN " . xlt('Notes') . ">") . "\n";
-                            // CSV headers:
-                            echo csvEscape(xlt("Key")) . "," . csvEscape(xlt("Notes")) . "\n";
-                        }
-                        if (!empty($aNotes)) {
-                            if (!$as_csv) {
-                                echo "<div class='table-responsive'>";
-                                echo "<table class='table'>\n";
-                                echo " <tr style='background-color: var(--gray200);'>\n";
-                                echo "  <th class='text-center' colspan='2'>" . xlt('Notes') . "</th>\n";
-                                echo " </tr>\n";
-                            }
-                            foreach ($aNotes as $key => $value) {
-                                if (!$as_csv) {
-                                    echo " <tr>\n";
-                                    echo "  <td class='align-top' style='padding:5px 5px;'>" . ($key + 1) . "</td>\n";
-                                    // <pre> tag because white space and a fixed font are often used to line things up.
-                                    echo "  <td><pre class='border-0 bg-white' style='white-space:pre-wrap;'>" . text($value) . "</pre></td>\n";
-                                    echo " </tr>\n";
-                                } else {
-                                    echo csvEscape($key + 1) . "," . csvEscape($value) . "\n";
-                                }
-                            }
+    <?php }
+    if ($as_csv) {
+        echo csvEscape("<BEGIN " . xlt('Notes') . ">") . "\n";
+        // CSV headers:
+        echo csvEscape(xlt("Key")) . "," . csvEscape(xlt("Notes")) . "\n";
+    }
+    if (!empty($aNotes)) {
+        if (!$as_csv) {
+            echo "<div class='table-responsive'>";
+            echo "<table class='table'>\n";
+            echo " <tr style='background-color: var(--gray200);'>\n";
+            echo "  <th class='text-center' colspan='2'>" . xlt('Notes') . "</th>\n";
+            echo " </tr>\n";
+        }
+        foreach ($aNotes as $key => $value) {
+            if (!$as_csv) {
+                echo " <tr>\n";
+                echo "  <td class='align-top' style='padding:5px 5px;'>" . ($key + 1) . "</td>\n";
+                // <pre> tag because white space and a fixed font are often used to line things up.
+                echo "  <td><pre class='border-0 bg-white' style='white-space:pre-wrap;'>" . text($value) . "</pre></td>\n";
+                echo " </tr>\n";
+            } else {
+                echo csvEscape($key + 1) . "," . csvEscape($value) . "\n";
+            }
+        }
 
-                            if (!$as_csv) {
-                                echo "</table></div>\n";
-                            }
-                        }
-                    if (!$as_csv) { ?>
+        if (!$as_csv) {
+            echo "</table></div>\n";
+        }
+    }
+    if (!$as_csv) { ?>
                     </td>
                     <td class="border-0 text-right align-top">
                         <?php if ($input_form && !empty($ctx['priors_omitted']) /* empty($_POST['form_showall']) */) { ?>
@@ -809,7 +808,7 @@ function generate_order_report($orderid, $input_form = false, $genstyles = true,
                 </tr>
             </table>
         </div>
-<?php
+        <?php
     } else {
         echo csvEscape("<END " . xlt('Notes') . ">") . "\n";
         echo csvEscape("<END " . xlt('Ordered Procedure') . ">") . "\n";
@@ -817,7 +816,7 @@ function generate_order_report($orderid, $input_form = false, $genstyles = true,
     
     if ($input_form) { ?>
 </form>
-<?php } // end if input form
+    <?php } // end if input form
 
 } // end function generate_order_report
 ?>

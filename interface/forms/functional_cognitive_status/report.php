@@ -13,8 +13,8 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-require_once(__DIR__ . "/../../globals.php");
-require_once($GLOBALS["srcdir"] . "/api.inc.php");
+require_once __DIR__ . "/../../globals.php";
+require_once $GLOBALS["srcdir"] . "/api.inc.php";
 
 function functional_cognitive_status_report($pid, $encounter, $cols, $id, $as_csv = false)
 {
@@ -62,7 +62,7 @@ function functional_cognitive_status_report($pid, $encounter, $cols, $id, $as_cs
             ?>
             </tbody>
         </table>
-        <?php
+            <?php
         } else {
             foreach ($data as $key => $value) {
                 echo csvEscape($value['code']) . ",";
