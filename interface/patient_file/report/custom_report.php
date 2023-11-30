@@ -317,20 +317,13 @@ if ($printable) {
                         </div>
                     </div>
                 </div>
-                <div id="backLink">
-                    <a href="patient_report.php" onclick='top.restoreSession()'>
-                        <span class='title'><?php echo xlt('Patient Report'); ?></span>
-                        <span class='back'><?php echo text($tback); ?></span>
-                    </a>
+                <div id="backLink"><span class='title'><?php echo xlt('Patient Report'); ?></span></div>
+                <br />
+                <div class="btn-group" role="group">
+                    <a href="patient_report.php" class='btn btn-secondary btn-back' onclick='top.restoreSession()'><?php echo xlt('Back'); ?></a>
+                    <a href="custom_report.php?printable=1&<?php print postToGet($ar); ?>" class='btn btn-secondary btn-print link_submit' target='new' onclick='top.restoreSession()'><?php echo xlt('Print'); ?></a>
+                    <a href='custom_report.php?csv=1&<?php print postToGet($ar); ?>' class='btn btn-secondary btn-transmit link_submit' target='new' onclick='top.restoreSession()'><?php echo xlt('Export to CSV'); ?></a>
                 </div>
-                <br />
-                <br />
-                <a href="custom_report.php?printable=1&<?php print postToGet($ar); ?>" class='link_submit' target='new' onclick='top.restoreSession()'>
-                    [<?php echo xlt('Printable Version'); ?>]
-                </a>
-                <a href='custom_report.php?csv=1&<?php print postToGet($ar); ?>' class='link_submit' target='new' onclick='top.restoreSession()'>
-                    [<?php echo xlt('Export to CSV'); ?>]
-                </a>
 <?php } // end not printable
 
             // include ALL form's report.php files
