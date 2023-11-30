@@ -174,8 +174,7 @@ if ($csv) {
 
                 $('#date_error').css("display", "none");
 
-                if (diff < 0) //negative
-                {
+                if (diff < 0) { // Negative
                     $('#date_error').css("display", "inline");
                 } else {
                     $("#form_refresh").attr("value","true");
@@ -184,9 +183,8 @@ if ($csv) {
                 }
             }
 
-            //sorting changes
-            function sortingCols(sort_by,sort_order)
-            {
+            // Sorting changes
+            function sortingCols(sort_by,sort_order) {
                 $("#sortby").val(sort_by);
                 $("#sortorder").val(sort_order);
                 $("#form_refresh").attr("value","true");
@@ -196,18 +194,22 @@ if ($csv) {
             $(function () {
                 $(".numeric_only").keydown(function(event) {
                     // Allow only backspace and delete
-                    if ( event.keyCode == 46 || event.keyCode == 8 ) {
+                    if (event.keyCode == 46 || event.keyCode == 8) {
                         // let it happen, don't do anything
-                    }
-                    else {
-                        if(!((event.keyCode >= 96 && event.keyCode <= 105) || (event.keyCode >= 48 && event.keyCode <= 57)))
-                        {
+                    } else {
+                        if (!((event.keyCode >= 96 && event.keyCode <= 105) || (event.keyCode >= 48 && event.keyCode <= 57))) {
                             event.preventDefault();
                         }
                     }
                 });
 
                 <?php // Show inputs related to specific search options
+                if (
+                    !empty($_POST['srch_option'])
+                    && ($_POST['srch_option'] == "Allergies" || $_POST['srch_option'] == "Problems" || $_POST['srch_option'] == "Medications" || $_POST['srch_option'] == "Procedures" || $_POST['srch_option'] == "Lab Results")
+                ) { ?>
+                    $('#pr_diag').show();
+                <?php }
                 if (!empty($_POST['srch_option']) && ($_POST['srch_option'] == "Prescriptions")) { ?>
                     $('#rx_drug').show();
                 <?php }
@@ -223,9 +225,6 @@ if ($csv) {
                 if (!empty($_POST['srch_option']) && ($_POST['srch_option'] == "Observations")) { ?>
                     $('#obs_desc').show();
                 <?php }
-                if (!empty($_POST['srch_option']) && ($_POST['srch_option'] == "Procedures" || $_POST['srch_option'] == "Lab Results")) { ?>
-                    $('#pr_diag').show();
-                <?php }
                 ?>
 
                 $('.datetimepicker').datetimepicker({
@@ -235,11 +234,21 @@ if ($csv) {
                     <?php require $GLOBALS['srcdir'] . '/js/xl/jquery-datetimepicker-2-5-4.js.php'; ?>
                     <?php // can add any additional javascript settings to datetimepicker here; need to prepend first setting with a comma ?>
                 });
+
+                // Automatically add wildcards to applicable inputs if they are empty
+                $('.wildcard_field').on('focus', function() {
+                    var field_value = $(this).val();
+                    if (field_value === '') {
+                        $(this).val('%%');
+                        var field = $(this)[0];
+                        field.setSelectionRange(1, 1);
+                    }
+                });
             });
 
             function printForm() {
-                 var win = top.printLogPrint ? top : opener.top;
-                 win.printLogPrint(window);
+                var win = top.printLogPrint ? top : opener.top;
+                win.printLogPrint(window);
             }
 
             function srch_option_change(elem) {
@@ -247,6 +256,12 @@ if ($csv) {
                 $('#sortorder').val('');
 
                 // Reset and show/hide inputs related to specific search options
+                if (elem.value == 'Allergies' || elem.value == 'Problems' || elem.value == 'Medications' || elem.value == 'Procedures' || elem.value == 'Lab Results') {
+                    $('#pr_diag').show();
+                } else {
+                    $('#procedure_diagnosis').val('');
+                    $('#pr_diag').hide();
+                }
                 if (elem.value == 'Prescriptions') {
                     $('#rx_drug').show();
                 } else {
@@ -254,18 +269,21 @@ if ($csv) {
                     $('#rx_drug').hide();
                 }
                 if (elem.value == 'Communication') {
+                    $('#communication').val('<?php echo xlt('All'); ?>');
                     $('#com_pref').show();
                 } else {
                     $('#communication').val('');
                     $('#com_pref').hide();
                 }
                 if (elem.value == 'Insurance Companies') {
+                    $('#insurance_companies').val('<?php echo xlt('All'); ?>');
                     $('#ins_co').show();
                 } else {
                     $('#insurance_companies').val('');
                     $('#ins_co').hide();
                 }
                 if (elem.value == 'Encounters') {
+                    $('#encounter_type').val('<?php echo xlt('All'); ?>');
                     $('#enc_type').show();
                 } else {
                     $('#encounter_type').val('');
@@ -276,12 +294,6 @@ if ($csv) {
                 } else {
                     $('#observation_description').val('');
                     $('#obs_desc').hide();
-                }
-                if (elem.value == 'Procedures' || elem.value == 'Lab Results') {
-                    $('#pr_diag').show();
-                } else {
-                    $('#procedure_diagnosis').val('');
-                    $('#pr_diag').hide();
                 }
             }
 
@@ -307,7 +319,7 @@ if ($csv) {
                 } else {
                     echo "(" . xlt('All') . ")";
                 }
-            }  ?></span>
+            } ?></span>
             <span style="margin-left:5px;"><strong><?php echo xlt('Option'); ?>:</strong>&nbsp;<?php echo text($_POST['srch_option'] ?? '');
             if (!empty($_POST['srch_option']) && ($_POST['srch_option'] == "Insurance Companies") && ($_POST['insurance_companies'] != "")) {
                 if (isset($insarr[$_POST['insurance_companies']])) {
@@ -315,7 +327,7 @@ if ($csv) {
                 } else {
                     echo "(" . xlt('All') . ")";
                 }
-            }  ?></span>
+            } ?></span>
             </p>
         </div>
         <form name='theform' id='theform' method='post' action='patient_list_creation.php' onSubmit="return Form_Validate();">
@@ -325,7 +337,7 @@ if ($csv) {
                 <input type='hidden' name='form_refresh' id='form_refresh' value=''/>
                 <table>
                     <tr>
-                        <td width='640px'>
+                        <td style='min-width: 860px'>
                             <div class="cancel-float" style='float: left'>
                                 <table class='text'>
                                     <tr>
@@ -334,7 +346,7 @@ if ($csv) {
                                         <td class='col-form-label'><?php echo xlt('To{{range}}'); ?>: </td>
                                         <td><input type='text' class='datetimepicker form-control' name='date_to' id="date_to" size='18' value='<?php echo attr(oeFormatDateTime($sql_date_to, 0, true)); ?>'></td>
                                         <td class='col-form-label'><?php echo xlt('Option'); ?>: </td>
-                                        <td class='col-form-label'>
+                                        <td>
                                             <select class="form-control" name="srch_option" id="srch_option"
                                                 onchange="srch_option_change(this)">
                                                 <?php foreach ($search_options as $skey) { ?>
@@ -343,14 +355,14 @@ if ($csv) {
                                                 <?php } ?>
                                             </select>
                                         </td>
-                                        <td colspan="3">
+                                        <td colspan="2">
                                             <!-- Inputs for specific search options -->
                                             <span id="rx_drug" style="display: none">
-                                                <input class="form-control" name="prescription_drug" id="prescription_drug" title="<?php echo xla('(% matches any string, _ matches any character)'); ?>" placeholder="<?php echo xlt('Drug'); ?>"<?php echo !empty($_POST['prescription_drug']) ? ' value="' . $_POST['prescription_drug'] . '"' : '' ?>/>
+                                                <input class="form-control wildcard_field" name="prescription_drug" id="prescription_drug" title="<?php echo xla('(% matches any string, _ matches any character)'); ?>" placeholder="<?php echo xlt('Drug'); ?>"<?php echo !empty($_POST['prescription_drug']) ? ' value="' . $_POST['prescription_drug'] . '"' : '' ?>/>
                                             </span>
                                             <span id="com_pref" style="display: none">
                                                 <select class="form-control" name="communication" id="communication" title="<?php echo xlt('Select Communication Preferences'); ?>">
-                                                    <option> <?php echo xlt('All'); ?></option>
+                                                    <option><?php echo xlt('All'); ?></option>
                                                     <option value="allow_sms" <?php echo ($communication == "allow_sms") ? "selected" : ""; ?>><?php echo xlt('Allow SMS'); ?></option>
                                                     <option value="allow_voice" <?php echo ($communication == "allow_voice") ? "selected" : ""; ?>><?php echo xlt('Allow Voice Message'); ?></option>
                                                     <option value="allow_mail" <?php echo ($communication == "allow_mail") ? "selected" : ""; ?>><?php echo xlt('Allow Mail Message'); ?></option>
@@ -359,7 +371,7 @@ if ($csv) {
                                             </span>
                                             <span id="ins_co" style="display: none">
                                                 <select class="form-control" name="insurance_companies" id="insurance_companies" title="<?php echo xlt('Select Insurance Company'); ?>">
-                                                    <option> <?php echo xlt('All'); ?></option>
+                                                    <option><?php echo xlt('All'); ?></option>
                                                     <?php foreach ($insarr as $ins_id => $ins_co) { ?>
                                                         <option <?php echo (!empty($_POST['insurance_companies']) && ($_POST['insurance_companies'] == $ins_id)) ? 'selected' : ''; ?> value="<?php echo $ins_id; ?>"><?php echo text($ins_co); ?></option>
                                                     <?php } ?>
@@ -367,17 +379,17 @@ if ($csv) {
                                             </span>
                                             <span id="enc_type" style="display: none">
                                                 <select class="form-control" name="encounter_type" id="encounter_type">
-                                                    <option> <?php echo xlt('All'); ?></option>
+                                                    <option><?php echo xlt('All'); ?></option>
                                                     <?php foreach ($encarr as $enc_id => $enc_t) { ?>
                                                         <option <?php echo (!empty($_POST['encounter_type']) && ($_POST['encounter_type'] == $enc_id)) ? 'selected' : ''; ?> value="<?php echo $enc_id; ?>"><?php echo text($enc_t); ?></option>
                                                     <?php } ?>
                                                 </select>
                                             </span>
                                             <span id="obs_desc" style="display: none">
-                                                <input class="form-control" name="observation_description" id="observation_description" title="<?php echo xla('(% matches any string, _ matches any character)'); ?>" placeholder="<?php echo xlt('Code') . '/' . xlt('Description'); ?>"<?php echo !empty($_POST['observation_description']) ? ' value="' . $_POST['observation_description'] . '"' : '' ?>/>
+                                                <input class="form-control wildcard_field" name="observation_description" id="observation_description" title="<?php echo xla('(% matches any string, _ matches any character)'); ?>" placeholder="<?php echo xlt('Code') . '/' . xlt('Description'); ?>"<?php echo !empty($_POST['observation_description']) ? ' value="' . $_POST['observation_description'] . '"' : '' ?>/>
                                             </span>
                                             <span id="pr_diag" style="display: none">
-                                                <input class="form-control" name="procedure_diagnosis" id="procedure_diagnosis" title="<?php echo xla('(% matches any string, _ matches any character)'); ?>" placeholder="<?php echo xlt('Diagnosis Code'); ?>"<?php echo !empty($_POST['procedure_diagnosis']) ? ' value="' . $_POST['procedure_diagnosis'] . '"' : '' ?>/>
+                                                <input class="form-control wildcard_field" name="procedure_diagnosis" id="procedure_diagnosis" title="<?php echo xla('(% matches any string, _ matches any character)'); ?>" placeholder="<?php echo xlt('Diagnosis Code'); ?>"<?php echo !empty($_POST['procedure_diagnosis']) ? ' value="' . $_POST['procedure_diagnosis'] . '"' : '' ?>/>
                                             </span>
                                         </td>
                                     </tr>
@@ -396,9 +408,9 @@ if ($csv) {
                                             </table>
                                         </td>
                                         <td class='col-form-label'><?php echo xlt('Gender'); ?>:</td>
-                                        <td colspan="2"><?php echo generate_select_list('gender', 'sex', $sql_gender, 'Select Gender', 'Unassigned', '', ''); ?></td>
+                                        <td><?php echo generate_select_list('gender', 'sex', $sql_gender, 'Select Gender', 'Unassigned', '', ''); ?></td>
                                         <td class='col-form-label'><?php echo xlt('Ethnicity'); ?>:</td>
-                                        <td colspan="2"><?php echo generate_select_list('ethnicity', 'ethnicity', $sql_ethnicity, 'Select Ethnicity', 'Unassigned', '', ''); ?></td>
+                                        <td><?php echo generate_select_list('ethnicity', 'ethnicity', $sql_ethnicity, 'Select Ethnicity', 'Unassigned', '', ''); ?></td>
                                     </tr>
                                     <tr>
                                         <td class='col-form-label'><?php echo xlt('Provider'); ?>:</td>
@@ -408,26 +420,19 @@ if ($csv) {
                             </div>
                         </td>
 
-                        <td class='h-100' valign='middle' width="175">
-                            <table class='w-100 h-100' style='border-left: 1px solid;'>
-                                <tr>
-                                    <td>
-                                        <div class="text-center">
-                                            <div class="btn-group" role="group">
-                                                <a href='#' class='btn btn-secondary btn-save' onclick="$('#form_csvexport').val(''); submitForm();"><?php echo xlt('Submit'); ?></a>
-                                                <?php if (isset($_POST['form_refresh'])) {?>
-                                                    <a href='#' class='btn btn-secondary btn-print' onclick="printForm()"><?php echo xlt('Print'); ?></a>
-                                                    <a href='#' class='btn btn-secondary btn-transmit' onclick="$('#form_csvexport').attr('value', 'true'); submitForm();"><?php echo xlt('Export to CSV'); ?></a>
-                                                <?php } ?>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <!-- <td>
-                                        <div id='processing' style='display:none;' ><img src='../pic/ajax-loader.gif'/></div>
-                                    </td> -->
-                                </tr>
-                            </table>
+                        <td class='h-100' valign='middle' width='175px' style='border-left: 1px solid;'>
+                            <div class="text-center">
+                                <div class="btn-group-vertical" role="group">
+                                    <a href='#' class='btn btn-secondary btn-save' onclick="$('#form_csvexport').val(''); submitForm();"><?php echo xlt('Submit'); ?></a>
+                                    <?php if (isset($_POST['form_refresh'])) {?>
+                                        <a href='#' class='btn btn-secondary btn-transmit' onclick="$('#form_csvexport').attr('value', 'true'); submitForm();"><?php echo xlt('Export to CSV'); ?></a>
+                                        <a href='#' class='btn btn-secondary btn-print' onclick="printForm()"><?php echo xlt('Print'); ?></a>
+                                    <?php } ?>
+                                </div>
+                            </div>
                         </td>
+
+                        <!-- <div id='processing' style='display:none;' ><img src='../pic/ajax-loader.gif'/></div> - HTML requires modification to re-insert this -->
                     </tr>
                 </table>
             </div>
@@ -453,7 +458,7 @@ if (!empty($_POST['form_refresh'])) {
         case "Allergies":
         case "Problems":
             $sqlstmt .= ", li.date AS other_date,
-                    REPLACE(li.diagnosis, ';', ', ') AS lists_diagnosis,
+                    li.diagnosis AS pr_diagnosis,
                     li.title AS lists_title";
             break;
         case "Communication":
@@ -558,13 +563,17 @@ if (!empty($_POST['form_refresh'])) {
     // WHERE conditions started
     $whr_stmt = " where 1=1";
     switch ($srch_option) {
-        case "Medications":
         case "Allergies":
+        case "Medications":
             $whr_stmt .= " AND li.date >= ? AND li.date < DATE_ADD(?, INTERVAL 1 DAY) AND li.date <= ?";
             array_push($sqlBindArray, $sql_date_from, $sql_date_to, date("Y-m-d H:i:s"));
             break;
         case "Problems":
             $whr_stmt .= " AND li.title != '' AND li.date >= ? AND li.date < DATE_ADD(?, INTERVAL 1 DAY) AND li.date <= ?";
+            array_push($sqlBindArray, $sql_date_from, $sql_date_to, date("Y-m-d H:i:s"));
+            break;
+        case "Prescriptions":
+            $whr_stmt .= " AND rx.date_added >= ? AND rx.date_added < DATE_ADD(?, INTERVAL 1 DAY) AND rx.date_added <= ?";
             array_push($sqlBindArray, $sql_date_from, $sql_date_to, date("Y-m-d H:i:s"));
             break;
         case "Communication":
@@ -583,10 +592,6 @@ if (!empty($_POST['form_refresh'])) {
             break;
         case "Observations":
             $whr_stmt .= " AND obs.date >= ? AND obs.date < DATE_ADD(?, INTERVAL 1 DAY) AND obs.date <= ?";
-            array_push($sqlBindArray, $sql_date_from, $sql_date_to, date("Y-m-d H:i:s"));
-            break;
-        case "Prescriptions":
-            $whr_stmt .= " AND rx.date_added >= ? AND rx.date_added < DATE_ADD(?, INTERVAL 1 DAY) AND rx.date_added <= ?";
             array_push($sqlBindArray, $sql_date_from, $sql_date_to, date("Y-m-d H:i:s"));
             break;
         case "Procedures":
@@ -657,9 +662,14 @@ if (!empty($_POST['form_refresh'])) {
         $whr_stmt .= " AND (obs.code LIKE ? OR obs.description LIKE ?)";
         array_push($sqlBindArray, $observation_description, $observation_description);
     }
-    if (($srch_option == "Procedures" || $srch_option == "Lab Results") && strlen($procedure_diagnosis) > 0) {
-        $whr_stmt .= " AND (pr_ord.order_diagnosis LIKE ? OR pr_code.diagnoses LIKE ?)";
-        array_push($sqlBindArray, $procedure_diagnosis, $procedure_diagnosis);
+    if (strlen($procedure_diagnosis) > 0) {
+        if ($srch_option == "Allergies" || $srch_option == "Problems" || $srch_option == "Medications") {
+            $whr_stmt .= " AND li.diagnosis LIKE ?";
+            array_push($sqlBindArray, $procedure_diagnosis);
+        } else if ($srch_option == "Procedures" || $srch_option == "Lab Results") {
+            $whr_stmt .= " AND (pr_ord.order_diagnosis LIKE ? OR pr_code.diagnoses LIKE ?)";
+            array_push($sqlBindArray, $procedure_diagnosis, $procedure_diagnosis);
+        }
     }
 
     // Controls the columns displayed, their headings and widths, and how many columns are sorted from the left
@@ -679,15 +689,15 @@ if (!empty($_POST['form_refresh'])) {
         ),
         "Diagnoses" => array( // Diagnosis Check - Medications, Allergies, Problems
             "cols" => array(
-                "other_date"      => array("heading" => "Diagnosis Date", "width" => "nowrap"),
-                "patient_name"    => array("heading" => "Patient Name",   "width" => "10%"),
-                "patient_id"      => array("heading" => "PID",            "width" => "nowrap"),
-                "patient_age"     => array("heading" => "Age",            "width" => "nowrap"),
-                "patient_sex"     => array("heading" => "Gender",         "width" => "nowrap"),
-                "patient_ethnic"  => array("heading" => "Ethnicity",      "width" => "10%"),
-                "users_provider"  => array("heading" => "Provider",       "width" => "10%"),
-                "lists_diagnosis" => array("heading" => "Diagnosis",      "width" => "15%"),
-                "lists_title"     => array(                               "width" => "15%") // Heading assigned below
+                "other_date"      => array("heading" => "Diagnosis Date",  "width" => "nowrap"),
+                "patient_name"    => array("heading" => "Patient Name",    "width" => "10%"),
+                "patient_id"      => array("heading" => "PID",             "width" => "nowrap"),
+                "patient_age"     => array("heading" => "Age",             "width" => "nowrap"),
+                "patient_sex"     => array("heading" => "Gender",          "width" => "nowrap"),
+                "patient_ethnic"  => array("heading" => "Ethnicity",       "width" => "10%"),
+                "users_provider"  => array("heading" => "Provider",        "width" => "10%"),
+                "pr_diagnosis"    => array("heading" => "Diagnosis Codes", "width" => "20%"),
+                "lists_title"     => array(                                "width" => "15%") // Heading assigned below
             ),
             "sort_cols" => 3,
             "acl" => ["patients", "med"]
@@ -774,7 +784,7 @@ if (!empty($_POST['form_refresh'])) {
                 "users_provider"  => array("heading" => "Procedure Provider", "width" => "10%"),
                 "pr_lab"          => array("heading" => "Lab",                "width" => "10%"),
                 "pr_status"       => array("heading" => "Status",             "width" => "nowrap"),
-                "pr_diagnosis"    => array("heading" => "Primary Diagnosis",  "width" => "15%"),
+                "pr_diagnosis"    => array("heading" => "Primary Diagnosis",  "width" => "20%"),
                 "prc_procedure"   => array("heading" => "Procedure Test",     "width" => "10%"),
                 "prc_diagnoses"   => array("heading" => "Diagnosis Codes",    "width" => "20%")
             ),
@@ -940,7 +950,7 @@ if (!empty($_POST['form_refresh'])) {
                 </table>
 
                 <table class='table' width='90%' align="center" cellpadding="5" cellspacing="0" style="font-family: Tahoma;" border="0">
-                    <tr <?php echo ($srch_option == "Lab Results") ? 'bgcolor="#C3FDB8" align="left" ' : ''; ?>style="font-size:15px;">
+                    <tr class="bg-light" style="font-size:15px;">
         <?php }
         foreach (array_keys($report_options_arr[$srch_option]["cols"]) as $report_col_key => $report_col) {
             if (!$csv) {
@@ -984,7 +994,7 @@ if (!empty($_POST['form_refresh'])) {
 
         foreach ($report_data_arr as $report_data_key => $report_data) {
             if (!$csv) { ?>
-                    <tr bgcolor="#CCCCCC" style="font-size:15px;">
+                    <tr style="font-size:15px;">
             <?php }
             foreach ($report_data as $report_value_key => $report_value) {
                 $report_col = array_keys($report_options_arr[$srch_option]["cols"])[$report_value_key];
