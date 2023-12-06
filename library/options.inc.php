@@ -3903,7 +3903,7 @@ function display_layout_rows($formtype, $result1, $result2 = '', $as_csv = false
         }
         disp_end_group(as_csv: $as_csv);
     } // End this layout, there may be more in the case of history.
-    if ($as_csv) {
+    if ($as_csv && sizeof($csv_columns) != 0 && sizeof($csv_fields) != 0) {
         echo implode(",", $csv_columns) . "\n" . implode(",", $csv_fields) . "\n";
     }
 }
