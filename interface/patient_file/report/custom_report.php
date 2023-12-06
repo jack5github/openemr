@@ -1119,9 +1119,12 @@ foreach ($ar as $key => $val) {
                                 }
                             }
                             if (!isset($user_func_args['as_csv'])) {
-                                echo csvEscape("<! WARNING: function " . $res[1] . "_report DOES NOT SUPPORT CSV EXPORT !>") . "\n";
+                                echo csvEscape("<BEGIN WARNING: function " . $res[1] . "_report DOES NOT SUPPORT CSV EXPORT>") . "\n";
                             }
                             call_user_func_array($res[1] . "_report", $user_func_args);
+                            if (!isset($user_func_args['as_csv'])) {
+                                echo csvEscape("<END WARNING: function " . $res[1] . "_report DOES NOT SUPPORT CSV EXPORT>") . "\n";
+                            }
                         }
                     } else if (!$csv) {
                         echo "<h6>" . xlt("Not signed.") . "</h6>";
